@@ -374,3 +374,97 @@ python manage.py createsuperuser
 | 10 | `lucas_bennett` | Lucas Bennett | Athens, Greece | Architect |
 
 Each demo user has a real avatar, cover image, posts with photos, 1–2 stories, follow relationships, likes and comments — populated automatically by the `seed` command.
+
+---
+
+## Why Django? — How and why Django powers this project
+
+This project is intentionally a "Django-first" build. Almost every feature you see — from authentication to the admin dashboard, from user-uploaded images to JSON API responses — leans on a part of Django that already exists, is battle-tested, and would otherwise take weeks to build from scratch.
+
+Below is a tour of the Django features this project uses, mapped to where they live in the codebase, so you can read the source and see exactly *why* a Django-shaped solution was the right call.
+
+### 1. The MVT (Model-View-Template) architecture
+
+The whole repo is organised around Django's **MVT triad**, multiplied across five focused apps:
+
+| Layer | What it does | Examples |
+|-------|--------------|----------|
+| **Models** (`models.py`) | Define the data and the rules that protect it | `Post`, `Profile`, `Follow`, `Like`, `Story`, `Conversation`, `Notification`, `Block`, `Bookmark` |
+| **Views** (`views.py`) | Turn HTTP requests into responses, enforce business rules | `feed_view`, `post_create`, `toggle_like`, `PostUpdateView`, `thread`, `notification_dropdown` |
+| **Templates** (`templates/`) | Render HTML using Django's template language | `base.html` (the dashboard shell), reusable partials like `_post_card.html` and `_comment.html` |
+
+Splitting the project into multiple apps (`accounts`, `posts`, `notifications`, `messaging`, `api`) is also Django convention — each app is independently testable, removable, and reusable.
+
+### 2. The ORM and relational integrity
+
+Social platforms live and die on relationships: who follows who, whose post you liked, which comment is a reply to which. Django's **ORM** lets us model that with plain Python and have the database enforce correctness for us:
+
+- **`ForeignKey` and `ManyToManyField`** wire users to posts, posts to interests, comments to parents (for replies).
+- **`UniqueConstraint`** at the database level prevents duplicate likes (`Like`), duplicate follows (`Follow`), duplicate bookmarks (`Bookmark`), and duplicate blocks (`Block`) — even under a race condition.
+- **`CheckConstraint`** prevents users from following or blocking themselves, enforced by the DB, not by view logic.
+- **Custom `QuerySet` annotations** in [`posts/views.py`](posts/views.py) (`annotate_posts`) attach `like_count`, `comment_count`, `is_liked`, and `is_bookmarked` to every post in **one** SQL query — not N+1.
+
+This means the truth of the social graph lives in the schema, not scattered across view code.
+
+### 3. Built-in authentication
+
+`django.contrib.auth` provides everything authentication needs out of the box: secure password hashing (PBKDF2 by default), session management, login/logout views, password reset emails, the `@login_required` decorator, and the `User` model. We extended it with a `Profile` (one-to-one) instead of subclassing — simpler, fewer migration headaches.
+
+On top of that we added a **honeypot signup field** and a **cache-backed login throttle** (`accounts/throttle.py`) to stop bot signups and brute-force attempts.
+
+### 4. The admin panel — for free
+
+Every model in the project gets a fully-featured CRUD interface at `/admin/` simply by registering it (`admin.py`). For a social platform that's huge: moderating posts, banning users, inspecting follow graphs, browsing notifications and conversations — all without writing a single extra view. This is one of Django's most under-appreciated superpowers.
+
+### 5. Forms, validation, and file uploads
+
+Django's **`ModelForm`** binds HTML forms directly to models with automatic validation. We use it for signup, profile editing, post creation, comments, and stories. File uploads (avatars, cover images, post photos, story images) plug straight in via `ImageField` — Django writes them to `MEDIA_ROOT` and serves them in dev. Custom validators in `posts/forms.py` enforce file-size and content-type rules for uploads.
+
+### 6. Templates, the Django template language, and custom tags
+
+The template engine handles inheritance (`base.html`), partials (the reusable `_post_card.html` block), context processors (`unread_notification_count` available to every page), and custom template tags (`linkify_post` in [`posts/templatetags/post_extras.py`](posts/templatetags/post_extras.py) that turns `@mentions` and `#hashtags` into clickable links — safely, after escaping HTML).
+
+### 7. Signals — automatic side-effects
+
+When a new `User` is created, a `Profile` is automatically created alongside it via a `post_save` signal in [`accounts/signals.py`](accounts/signals.py). The view layer never has to remember to do this. Notifications for likes, comments, follows, and mentions are also created from view code that runs alongside the action — keeping side-effects close to where they belong.
+
+### 8. URL routing and reverse resolution
+
+URL config is namespaced per app (`accounts:profile`, `posts:detail`, `messaging:thread`, etc.). Templates and views always use `{% url %}` and `reverse()` — never hard-coded paths — so renaming a URL anywhere updates every link automatically.
+
+### 9. The Django REST Framework integration
+
+For the `/api/` layer we added **DRF**, which itself is built on Django's class-based views. ViewSets, serializers, permission classes, throttling, token auth, and OpenAPI generation (`drf-spectacular`) all compose cleanly with the rest of the Django app — same auth, same models, same database. The Swagger UI at `/api/docs/` is auto-generated from the serializer + viewset metadata.
+
+### 10. Security features Django gives you for free
+
+Django ships with sensible defaults that the project benefits from automatically:
+
+- **CSRF protection** on every POST form.
+- **HTML escaping** by default in templates — XSS is opt-in, not opt-out.
+- **Parameterised SQL queries** via the ORM — SQL injection isn't possible from query parameters.
+- **Clickjacking protection** via `X-Frame-Options: DENY` (toggled in `settings.py` for production).
+- **Secure session cookies, HSTS, secure proxy headers** — switched on automatically when `DEBUG=False`.
+- **Password hashing** with PBKDF2 (configurable to Argon2).
+
+A social platform that handled auth and SQL by hand would need months of security review. Django ships these safe defaults from day one.
+
+### 11. Migrations
+
+Every schema change in this project — adding `Comment.parent`, `Block`, `Bookmark`, `CommentLike`, indexing `Story.expires_at` — is a tracked migration file. `python manage.py migrate` applies them in order; `--clear seed` re-populates demo data on top. Schema evolution is reproducible for any teammate or for any production deploy.
+
+### 12. The testing framework
+
+84 tests covering signup, login, post CRUD, permissions, like/unlike, comments and replies, follow/unfollow, blocks, bookmarks, story expiry, visibility, mentions, hashtags, throttling, honeypot — all using `django.test.TestCase`, which spins up an isolated transactional test database for every run. CI (`.github/workflows/ci.yml`) runs them on every push.
+
+### Why Django was the right framework for this specific project
+
+A social community platform is exactly the kind of app Django was designed for:
+
+1. **Lots of related entities** (users, posts, comments, follows…) → ORM + admin shine here.
+2. **Auth is mission-critical** → don't roll your own; `django.contrib.auth` is enough.
+3. **Content moderation matters** → the free admin panel saves weeks.
+4. **Term-project timeframe** → "batteries-included" lets one developer ship in days, not months.
+5. **Future scaling** → when traffic grows, swap SQLite → Postgres via `DATABASE_URL`, swap local media → S3 via `django-storages`, drop in Celery for background jobs — the framework grows with the project.
+
+In short: Django provides the boring (but essential) 80% — auth, admin, ORM, forms, security, migrations — so all of the design and feature work in this repo could focus on the social-platform-specific 20%: feeds, stories, mentions, dark mode, notifications, messaging, the dashboard UI.

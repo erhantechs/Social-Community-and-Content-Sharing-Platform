@@ -350,3 +350,97 @@ python manage.py createsuperuser
 | 10 | `lucas_bennett` | Lucas Bennett | Atina, Yunanistan | Mimar |
 
 Her demo kullanıcının gerçek avatarı, kapak görseli, fotoğraflı gönderileri, 1–2 hikâyesi, takip ilişkileri, beğeni ve yorumları otomatik olarak `seed` komutuyla oluşturulur.
+
+---
+
+## Bu projede Django'nun kullanımı ve önemi
+
+Bu proje bilinçli olarak "Django öncelikli" tasarlandı. Gördüğünüz hemen her özellik — kimlik doğrulamadan admin panele, kullanıcının yüklediği görsellerden JSON API yanıtlarına kadar — Django'nun zaten var olan, sahada test edilmiş ve sıfırdan yazılsa haftalar alacak bir parçasına yaslanıyor.
+
+Aşağıda, projedeki kullanım yerleriyle birlikte hangi Django özelliklerinin hangi sorunu çözdüğü anlatılıyor; böylece kaynağı okurken neden Django'nun seçildiği netleşiyor.
+
+### 1. MVT (Model-View-Template) mimarisi
+
+Tüm depo, beş odaklı uygulamada çoğaltılan **Django MVT üçlüsü** etrafında düzenli:
+
+| Katman | Görevi | Örnekler |
+|--------|--------|----------|
+| **Modeller** (`models.py`) | Veriyi ve onu koruyan kuralları tanımlar | `Post`, `Profile`, `Follow`, `Like`, `Story`, `Conversation`, `Notification`, `Block`, `Bookmark` |
+| **View'lar** (`views.py`) | HTTP isteğini yanıta çevirir, iş kurallarını uygular | `feed_view`, `post_create`, `toggle_like`, `PostUpdateView`, `thread`, `notification_dropdown` |
+| **Template'ler** (`templates/`) | Django template diliyle HTML üretir | `base.html` (dashboard kabuğu), `_post_card.html` ve `_comment.html` gibi tekrar kullanılabilir parça'lar |
+
+Projeyi birden fazla app'e (`accounts`, `posts`, `notifications`, `messaging`, `api`) bölmek de Django geleneği — her app bağımsız test edilebilir, çıkarılabilir ve başka projede yeniden kullanılabilir.
+
+### 2. ORM ve ilişkisel bütünlük
+
+Sosyal platformlar ilişkilerle yaşar: kim kimi takip ediyor, hangi gönderiyi beğendin, hangi yorum hangi yoruma cevap. Django'nun **ORM**'u bunu düz Python ile modellememizi ve doğruluğun veritabanı tarafından korunmasını sağlar:
+
+- **`ForeignKey` ve `ManyToManyField`** kullanıcıları gönderilere, gönderileri ilgi alanlarına, yorumları (cevaplar için) parent yorumlara bağlar.
+- **`UniqueConstraint`** veritabanı seviyesinde aynı beğeninin (`Like`), aynı takibin (`Follow`), aynı bookmark'ın (`Bookmark`) ve aynı engelin (`Block`) iki kez oluşmasını engeller — race condition'a karşı bile.
+- **`CheckConstraint`** kullanıcının kendini takip etmesini veya kendini engellemesini DB tarafında engeller, view koduna güvenmek zorunda kalmaz.
+- **Özelleştirilmiş `QuerySet` annotation'ları** — [`posts/views.py`](posts/views.py) içindeki `annotate_posts` her gönderiye `like_count`, `comment_count`, `is_liked` ve `is_bookmarked` alanlarını **tek** SQL sorgusunda ekler — N+1 problemi yok.
+
+Yani sosyal grafiğin gerçeği şemada yaşıyor; view koduna dağılmış değil.
+
+### 3. Hazır kimlik doğrulama (auth)
+
+`django.contrib.auth` hazır olarak ne lazımsa veriyor: güvenli parola hashleme (varsayılanda PBKDF2), session yönetimi, login/logout view'ları, parola sıfırlama mailleri, `@login_required` decorator'ı ve `User` modeli. Bunu `User`'ı subclass etmek yerine **bir-bir `Profile`** ile genişlettik — daha basit, migration baş ağrısı az.
+
+Üstüne **gizli honeypot signup alanı** ve **cache tabanlı login throttle** (`accounts/throttle.py`) ekleyerek bot kayıtlarını ve brute-force denemelerini durduruyoruz.
+
+### 4. Bedava admin panel
+
+Projedeki her model `admin.py`'de kaydedildiği anda `/admin/`'de tam bir CRUD arayüzü kazanıyor. Sosyal bir platform için bu çok büyük bir kazanç: gönderi moderasyonu, kullanıcı banlama, takip grafiğini inceleme, bildirim ve konuşmalara bakma — hiçbir ek view yazmadan. Django'nun en az takdir edilen süper güçlerinden biri.
+
+### 5. Form'lar, doğrulama ve dosya yüklemeleri
+
+Django'nun **`ModelForm`**'u HTML form'ları doğrudan modellere bağlar, validasyon otomatik gelir. Signup, profil düzenleme, gönderi oluşturma, yorum ve hikâye'lerde kullanıyoruz. Dosya yüklemeleri (avatar, kapak, gönderi fotoğrafı, hikâye görseli) `ImageField` üzerinden direkt çalışır — Django dosyayı `MEDIA_ROOT`'a yazar ve dev'de servis eder. `posts/forms.py` içindeki özel validator'lar dosya boyutu ve content-type kurallarını uygular.
+
+### 6. Template'ler, Django template dili ve özel tag'ler
+
+Template engine inheritance (`base.html`), parça dosyalar (tekrar kullanılan `_post_card.html`), context processor'lar (`unread_notification_count` her sayfada erişilebilir) ve özel template tag'leri ([`posts/templatetags/post_extras.py`](posts/templatetags/post_extras.py) içindeki `linkify_post` `@mention` ve `#hashtag`'leri tıklanabilir bağlantılara çevirir — HTML escape edildikten sonra, güvenli şekilde) destekler.
+
+### 7. Signal'ler — otomatik yan etkiler
+
+Yeni bir `User` oluşturulduğunda, [`accounts/signals.py`](accounts/signals.py) içindeki `post_save` signal'i sayesinde otomatik olarak bir `Profile` da oluşur. View katmanı bunu yapmayı asla unutamaz. Like, comment, follow ve mention'lardan tetiklenen bildirimler de eylemin yanında oluşturuluyor — yan etkiler ait oldukları yere yakın kalıyor.
+
+### 8. URL yönlendirme ve ters çözümleme (reverse)
+
+URL config her app için namespace'lenmiş (`accounts:profile`, `posts:detail`, `messaging:thread`...). Template ve view'lar hep `{% url %}` ve `reverse()` kullanıyor — hard-coded path yok — bu sayede bir URL'i yeniden adlandırmak tüm bağlantıları otomatik günceller.
+
+### 9. Django REST Framework entegrasyonu
+
+`/api/` katmanı için Django'nun class-based view'ları üzerine kurulmuş **DRF** eklendi. ViewSet'ler, serializer'lar, permission class'ları, throttling, token auth ve OpenAPI üretimi (`drf-spectacular`) Django uygulamasının geri kalanıyla temizce kompoze oluyor — aynı auth, aynı modeller, aynı veritabanı. `/api/docs/` adresindeki Swagger UI tamamen serializer + viewset meta verisinden otomatik üretiliyor.
+
+### 10. Django'nun bedava verdiği güvenlik özellikleri
+
+Django, projenin otomatik faydalandığı sağduyulu varsayılanlarla geliyor:
+
+- Her POST formunda **CSRF koruması**.
+- Template'lerde **varsayılan HTML escape** — XSS opt-in, opt-out değil.
+- ORM ile **parametrik SQL sorguları** — query parametresinden SQL injection imkansız.
+- **Clickjacking koruması** (`X-Frame-Options: DENY`) — production için settings.py'da açık.
+- **Güvenli session cookie'leri, HSTS, secure proxy header'ları** — `DEBUG=False`'ta otomatik açılıyor.
+- PBKDF2 ile **parola hashleme** (Argon2'ye geçilebilir).
+
+Auth ve SQL'i el ile yazsaydık aylarca güvenlik denetimi gerekecekti. Django bu güvenli varsayılanları ilk günden veriyor.
+
+### 11. Migration'lar
+
+Bu projedeki her şema değişikliği — `Comment.parent`, `Block`, `Bookmark`, `CommentLike`'ı eklemek, `Story.expires_at`'i indekslemek — bir migration dosyası olarak izleniyor. `python manage.py migrate` onları sırayla uygular; `seed --clear` üstüne demo veriyi yeniden basar. Şema evrimi her takım arkadaşı veya production deploy'u için tekrarlanabilir.
+
+### 12. Test framework'ü
+
+84 test signup, login, gönderi CRUD, izinler, beğeni/iptal, yorumlar ve cevaplar, takip/bırakma, engeller, bookmark'lar, hikâye süresi, görünürlük, mention, hashtag, throttling, honeypot'u kapsıyor — hepsi `django.test.TestCase` ile, her çalıştırmada izole bir transactional test veritabanı kuruluyor. CI (`.github/workflows/ci.yml`) push'larda otomatik çalıştırıyor.
+
+### Bu proje için neden Django doğru framework?
+
+Sosyal topluluk platformu tam olarak Django'nun tasarlandığı senaryo:
+
+1. **Çok sayıda ilişkili varlık** (kullanıcılar, gönderiler, yorumlar, takipler...) → ORM + admin burada parlıyor.
+2. **Auth kritik** → kendi yapma; `django.contrib.auth` yeterli.
+3. **İçerik moderasyonu önemli** → bedava admin panel haftalar kazandırıyor.
+4. **Dönem ödevi süresi** → "pilleri dahil" felsefesi tek geliştiriciye günler içinde teslim imkanı veriyor.
+5. **Gelecekteki ölçeklenme** → trafik artınca SQLite → Postgres'e `DATABASE_URL` ile, yerel medya → S3'e `django-storages` ile geçilebilir, arka plan işleri için Celery eklenebilir — framework projeyle birlikte büyüyor.
+
+Kısaca: Django sıkıcı (ama temel) %80'i — auth, admin, ORM, form'lar, güvenlik, migration'lar — sağlıyor, böylece bu repo'daki tasarım ve özellik geliştirmenin tamamı sosyal platforma özgü %20'ye odaklanabildi: feed'ler, hikâyeler, mention'lar, karanlık mod, bildirimler, mesajlaşma ve dashboard UI'ı.
