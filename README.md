@@ -468,3 +468,158 @@ A social community platform is exactly the kind of app Django was designed for:
 5. **Future scaling** → when traffic grows, swap SQLite → Postgres via `DATABASE_URL`, swap local media → S3 via `django-storages`, drop in Celery for background jobs — the framework grows with the project.
 
 In short: Django provides the boring (but essential) 80% — auth, admin, ORM, forms, security, migrations — so all of the design and feature work in this repo could focus on the social-platform-specific 20%: feeds, stories, mentions, dark mode, notifications, messaging, the dashboard UI.
+
+---
+
+## 🚀 Run this project on your own machine — step by step
+
+Just downloaded the repo from GitHub and don't know what to do next? This walkthrough takes you from "zero" to "logged in to a fully populated social platform" in about 5 minutes.
+
+### Step 0 — Make sure you have what you need
+
+| Tool | Minimum version | Check command |
+|------|-----------------|---------------|
+| **Python** | 3.11 or newer | `python --version` |
+| **pip** | comes with Python | `pip --version` |
+| **Git** *(optional — only if you used `git clone`)* | any recent | `git --version` |
+
+If `python --version` says "command not found" or shows 3.10 or older, install the latest Python from https://www.python.org/downloads/ first. On Windows, **check the "Add Python to PATH" box** during install.
+
+### Step 1 — Get the code
+
+**Option A — with Git (recommended):**
+```bash
+git clone https://github.com/erhantechs/Social-Community-and-Content-Sharing-Platform.git
+cd Social-Community-and-Content-Sharing-Platform
+```
+
+**Option B — ZIP download:**
+1. On the GitHub page, click the green **`Code`** button → **Download ZIP**
+2. Extract the ZIP somewhere convenient
+3. Open a terminal in that extracted folder
+
+### Step 2 — Create a virtual environment *(strongly recommended)*
+
+A virtual environment keeps this project's libraries separate from anything else on your computer.
+
+```bash
+# Create it
+python -m venv .venv
+
+# Activate it
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# Windows (cmd):
+.venv\Scripts\activate.bat
+# macOS / Linux:
+source .venv/bin/activate
+```
+
+After activating you should see `(.venv)` at the start of your terminal prompt. From now on, every `python` and `pip` command goes into this isolated environment.
+
+> **PowerShell error: "running scripts is disabled"?**
+> Run once: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`, then activate again.
+
+### Step 3 — Install the required Python packages
+
+```bash
+pip install -r requirements.txt
+```
+
+This pulls down Django, DRF, Pillow, WhiteNoise, and a few other libraries listed in `requirements.txt`. It usually takes 30-60 seconds.
+
+### Step 4 — Set up the environment file
+
+```bash
+# Windows:
+copy .env.example .env
+# macOS / Linux:
+cp .env.example .env
+```
+
+You can leave the defaults as-is for local development. The file is just there to override `SECRET_KEY`, `DEBUG`, and email/database settings if you need to.
+
+### Step 5 — Create the database
+
+```bash
+python manage.py migrate
+```
+
+This creates a fresh `db.sqlite3` file with all the tables Django and the apps need. You should see a long list of `Applying ... OK` lines.
+
+### Step 6 — Create your admin account
+
+```bash
+python manage.py createsuperuser
+```
+
+Enter a username, email (optional), and password when prompted. This account is what you'll use to log in to `/admin/`.
+
+### Step 7 *(optional but recommended)* — Load the demo data
+
+Want to see a populated dashboard immediately? Run:
+
+```bash
+python manage.py seed
+```
+
+This creates 10 demo users with real avatars, cover photos, posts, stories, follows, likes, and comments. Wait ~30 seconds for the images to download from picsum.photos / pravatar.cc. (No network? It falls back to gradient placeholders.)
+
+After this finishes, you can log in as **`emma_wilson`** with password **`DemoPass!234`** (or any of the 10 demo users — see the *Demo accounts* table above).
+
+### Step 8 — Start the server
+
+```bash
+python manage.py runserver
+```
+
+You should see:
+
+```
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+```
+
+### Step 9 — Open it in your browser
+
+Visit:
+
+| URL | What you'll see |
+|-----|-----------------|
+| http://127.0.0.1:8000/ | Redirects to the feed (login required) |
+| http://127.0.0.1:8000/posts/ | Personalized feed |
+| http://127.0.0.1:8000/posts/explore/ | Public posts |
+| http://127.0.0.1:8000/admin/ | Admin panel (use the superuser from Step 6) |
+| http://127.0.0.1:8000/api/docs/ | Interactive API documentation (Swagger UI) |
+| http://127.0.0.1:8000/healthz/ | Health-check JSON `{"status":"ok"}` |
+
+### Step 10 *(optional)* — Run the test suite
+
+```bash
+python manage.py test
+```
+
+You should see `Ran 84 tests in ...s` followed by `OK`. If any tests fail, something in your environment is off.
+
+---
+
+### 🔧 Common problems and quick fixes
+
+| Symptom | Fix |
+|---------|-----|
+| `python: command not found` | Install Python 3.11+ from python.org. Tick "Add Python to PATH" on Windows. |
+| `ModuleNotFoundError: No module named 'django'` | Forgot to activate the venv (Step 2) or skipped Step 3. |
+| `OperationalError: no such table: ...` | Skipped Step 5. Run `python manage.py migrate`. |
+| Port 8000 already in use | `python manage.py runserver 8001` — uses a different port. |
+| Permission denied when activating venv on PowerShell | `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` then retry. |
+| Login throws "Too many login attempts" (429) | You hit the rate limiter. Wait 5 minutes or restart the dev server. |
+
+### 🛑 How to stop the server
+
+Press **`Ctrl + C`** in the terminal where the server is running.
+
+When you come back later, you only need to repeat steps **2 (activate venv)** and **8 (runserver)** — everything else is already set up.
+
+---
+
+That's it. You should now have a fully working SocialHub running locally. If you run into something not covered above, open an issue on GitHub or check the rest of this README — most edge cases are documented in the *Setup* and *Deployment* sections higher up.

@@ -444,3 +444,158 @@ Sosyal topluluk platformu tam olarak Django'nun tasarlandığı senaryo:
 5. **Gelecekteki ölçeklenme** → trafik artınca SQLite → Postgres'e `DATABASE_URL` ile, yerel medya → S3'e `django-storages` ile geçilebilir, arka plan işleri için Celery eklenebilir — framework projeyle birlikte büyüyor.
 
 Kısaca: Django sıkıcı (ama temel) %80'i — auth, admin, ORM, form'lar, güvenlik, migration'lar — sağlıyor, böylece bu repo'daki tasarım ve özellik geliştirmenin tamamı sosyal platforma özgü %20'ye odaklanabildi: feed'ler, hikâyeler, mention'lar, karanlık mod, bildirimler, mesajlaşma ve dashboard UI'ı.
+
+---
+
+## 🚀 Projeyi kendi bilgisayarında çalıştır — adım adım
+
+GitHub'dan repo'yu indirdin ve ne yapacağını bilmiyor musun? Bu rehber seni "sıfırdan" "tamamen dolu bir sosyal platforma giriş yapmış" hâle yaklaşık 5 dakikada götürür.
+
+### Adım 0 — Gerekenleri kontrol et
+
+| Araç | Minimum sürüm | Kontrol komutu |
+|------|---------------|----------------|
+| **Python** | 3.11 veya üstü | `python --version` |
+| **pip** | Python ile birlikte gelir | `pip --version` |
+| **Git** *(opsiyonel — sadece `git clone` kullanırsan)* | herhangi yeni sürüm | `git --version` |
+
+Eğer `python --version` "command not found" diyorsa veya 3.10 ya da daha eski gösteriyorsa, önce https://www.python.org/downloads/ adresinden en yeni Python'u kur. **Windows'ta kurulum sırasında "Add Python to PATH" kutucuğunu işaretle.**
+
+### Adım 1 — Kodu indir
+
+**Seçenek A — Git ile (tavsiye edilen):**
+```bash
+git clone https://github.com/erhantechs/Social-Community-and-Content-Sharing-Platform.git
+cd Social-Community-and-Content-Sharing-Platform
+```
+
+**Seçenek B — ZIP indirme:**
+1. GitHub sayfasında yeşil **`Code`** butonuna tıkla → **Download ZIP**
+2. ZIP'i kullanışlı bir yere çıkar
+3. Çıkardığın klasörde bir terminal aç
+
+### Adım 2 — Sanal ortam (virtual environment) oluştur *(şiddetle tavsiye edilir)*
+
+Sanal ortam, bu projenin kütüphanelerini bilgisayarındaki diğer her şeyden ayrı tutar.
+
+```bash
+# Oluştur
+python -m venv .venv
+
+# Aktifleştir
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# Windows (cmd):
+.venv\Scripts\activate.bat
+# macOS / Linux:
+source .venv/bin/activate
+```
+
+Aktifleştirdikten sonra terminal prompt'unun başında `(.venv)` görmen gerekir. Bundan sonra her `python` ve `pip` komutu bu izole ortamda çalışır.
+
+> **PowerShell hatası: "running scripts is disabled"?**
+> Bir kerelik şunu çalıştır: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`, sonra tekrar aktifleştir.
+
+### Adım 3 — Gerekli Python paketlerini kur
+
+```bash
+pip install -r requirements.txt
+```
+
+Bu, `requirements.txt`'de listelenen Django, DRF, Pillow, WhiteNoise ve birkaç diğer kütüphaneyi indirir. Genelde 30-60 saniye sürer.
+
+### Adım 4 — Ortam dosyasını ayarla
+
+```bash
+# Windows:
+copy .env.example .env
+# macOS / Linux:
+cp .env.example .env
+```
+
+Yerel geliştirme için varsayılanları aynı bırakabilirsin. Bu dosya sadece `SECRET_KEY`, `DEBUG` ve email/veritabanı ayarlarını override etmek istersen var.
+
+### Adım 5 — Veritabanını oluştur
+
+```bash
+python manage.py migrate
+```
+
+Bu komut, Django'nun ve uygulamaların ihtiyaç duyduğu tüm tablolarla yeni bir `db.sqlite3` dosyası oluşturur. `Applying ... OK` satırlarından oluşan uzun bir liste görmen gerekir.
+
+### Adım 6 — Admin hesabını oluştur
+
+```bash
+python manage.py createsuperuser
+```
+
+İstendiğinde bir kullanıcı adı, email (opsiyonel) ve parola gir. Bu hesap `/admin/` paneline giriş yapmak için kullanacağın hesap.
+
+### Adım 7 *(opsiyonel ama tavsiye edilir)* — Demo veriyi yükle
+
+Doldurulmuş bir dashboard'u hemen görmek ister misin? Şunu çalıştır:
+
+```bash
+python manage.py seed
+```
+
+Bu komut 10 demo kullanıcıyı gerçek avatar, kapak görseli, gönderi, hikâye, takip, beğeni ve yorumlarla birlikte oluşturur. Görsellerin picsum.photos / pravatar.cc'den inmesini bekle — yaklaşık 30 saniye. (İnternet yoksa otomatik olarak gradient placeholder'lara düşer.)
+
+Bu bittikten sonra **`emma_wilson`** kullanıcı adı + **`DemoPass!234`** parola ile giriş yapabilirsin (veya 10 demo kullanıcıdan herhangi biri — yukarıdaki *Demo hesaplar* tablosuna bak).
+
+### Adım 8 — Sunucuyu başlat
+
+```bash
+python manage.py runserver
+```
+
+Şunu görmen gerekir:
+
+```
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+```
+
+### Adım 9 — Tarayıcıda aç
+
+Aşağıdaki adresleri ziyaret et:
+
+| URL | Ne göreceksin |
+|-----|---------------|
+| http://127.0.0.1:8000/ | Feed'e yönlendirir (giriş gerekli) |
+| http://127.0.0.1:8000/posts/ | Kişiselleştirilmiş feed |
+| http://127.0.0.1:8000/posts/explore/ | Herkese açık gönderiler |
+| http://127.0.0.1:8000/admin/ | Admin paneli (Adım 6'daki superuser ile) |
+| http://127.0.0.1:8000/api/docs/ | İnteraktif API dokümantasyonu (Swagger UI) |
+| http://127.0.0.1:8000/healthz/ | Sağlık kontrolü JSON `{"status":"ok"}` |
+
+### Adım 10 *(opsiyonel)* — Test setini çalıştır
+
+```bash
+python manage.py test
+```
+
+`Ran 84 tests in ...s` ve sonrasında `OK` görmen gerekir. Herhangi bir test başarısız olursa ortamında bir şey yanlış demektir.
+
+---
+
+### 🔧 Sık karşılaşılan sorunlar ve hızlı çözümler
+
+| Belirti | Çözüm |
+|---------|-------|
+| `python: command not found` | python.org'dan Python 3.11+ kur. Windows'ta "Add Python to PATH" kutucuğunu işaretle. |
+| `ModuleNotFoundError: No module named 'django'` | Venv'i aktifleştirmeyi unuttun (Adım 2) veya Adım 3'ü atladın. |
+| `OperationalError: no such table: ...` | Adım 5'i atladın. `python manage.py migrate` çalıştır. |
+| Port 8000 kullanımda | `python manage.py runserver 8001` — farklı port kullanır. |
+| PowerShell'de venv aktifleştirirken izin reddi | `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` çalıştır, tekrar dene. |
+| Giriş "Too many login attempts" (429) hatası | Rate limit'e takıldın. 5 dakika bekle veya dev sunucusunu yeniden başlat. |
+
+### 🛑 Sunucuyu nasıl durdurursun
+
+Sunucunun çalıştığı terminalde **`Ctrl + C`** tuşlarına bas.
+
+Daha sonra geri döndüğünde, sadece **Adım 2 (venv aktifleştir)** ve **Adım 8 (runserver)**'ı tekrarlaman yeter — geri kalan her şey zaten kurulmuş durumda.
+
+---
+
+Hepsi bu kadar. Artık yerel olarak çalışan, tam işlevsel bir SocialHub'a sahipsin. Yukarıda kapsanmayan bir sorunla karşılaşırsan GitHub'da bir issue aç veya README'nin daha üst kısımlarındaki *Kurulum* ve *Deployment* bölümlerine bak — çoğu kenar durum orada belgelenmiş.
