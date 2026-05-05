@@ -1,0 +1,68 @@
+{% load post_extras %}
+{# Single comment row + nested replies. Expects: comment, post (from outer scope). #}
+<li class="comment-list__item {% if comment.is_reply %}comment-list__item--reply{% endif %}" id="comment-{{ comment.pk }}">
+    <a href="{% url 'accounts:profile' comment.author.username %}" class="comment-list__avatar">
+        {% if comment.author.profile.avatar %}
+            <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}">
+        {% else %}
+            <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+        {% endif %}
+    </a>
+    <div class="comment-list__bubble">
+        <div class="comment-list__head">
+            <a href="{% url 'accounts:profile' comment.author.username %}">
+                <strong>{{ comment.author.profile.name|default:comment.author.username }}</strong>
+            </a>
+            <span class="text-muted small">· {{ comment.created_at|timesince }} ago</span>
+            {% if user == comment.author or user == post.author %}
+                <form method="post" action="{% url 'posts:comment_delete' comment.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-link text-danger p-0" type="submit"
+                            onclick="return confirm('Delete this comment?')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        <p>{{ comment.body|linkify_post }}</p>
+
+        <div class="comment-list__actions">
+            {% if user.is_authenticated %}
+                <button type="button"
+                        class="comment-action js-comment-like-btn {% if comment|comment_liked_by:user %}is-active{% endif %}"
+                        data-url="{% url 'posts:toggle_comment_like' comment.pk %}">
+                    <i class="bi {% if comment|comment_liked_by:user %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    <span class="js-cl-count">{{ comment.likes_count }}</span>
+                </button>
+                {% if not comment.is_reply %}
+                    <button type="button" class="comment-action js-reply-toggle"
+                            data-target="reply-{{ comment.pk }}">
+                        <i class="bi bi-reply"></i> Reply
+                    </button>
+                {% endif %}
+            {% else %}
+                <span class="comment-action"><i class="bi bi-heart"></i> {{ comment.likes_count }}</span>
+            {% endif %}
+        </div>
+
+        {% if user.is_authenticated and not comment.is_reply %}
+            <form method="post" action="{% url 'posts:comment_create' post.pk %}"
+                  class="comment-reply-form" id="reply-{{ comment.pk }}" hidden>
+                {% csrf_token %}
+                <input type="hidden" name="parent_id" value="{{ comment.pk }}">
+                <input type="text" name="body" class="form-control"
+                       placeholder="Reply to {{ comment.author.username }}…" required maxlength="1000">
+                <button class="btn btn-sm btn-dark mt-2" type="submit">Reply</button>
+            </form>
+        {% endif %}
+
+        {# Nested replies (one level deep) #}
+        {% if comment.replies.all %}
+            <ul class="comment-list comment-list--replies">
+                {% for reply in comment.replies.all %}
+                    {% include "partials/_comment.html" with comment=reply %}
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</li>

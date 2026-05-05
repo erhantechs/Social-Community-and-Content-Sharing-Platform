@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Delete post · SocialHub{% endblock %}
+
+{% block content %}
+<div class="card-block">
+    <h2>Delete this post?</h2>
+    <p class="text-muted">This action can't be undone.</p>
+
+    <blockquote class="post-card__body p-3 bg-light rounded">
+        {{ object.body|truncatewords:30 }}
+    </blockquote>
+
+    <form method="post" class="d-flex gap-2 mt-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, delete it</button>
+        <a href="{% url 'posts:detail' object.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

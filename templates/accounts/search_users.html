@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Search users · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">{% if query %}Users matching "{{ query }}"{% else %}Find people{% endif %}</h1>
+</div>
+
+<form action="{% url 'accounts:search_users' %}" method="get" class="search-form mb-3">
+    <i class="bi bi-search"></i>
+    <input type="search" name="q" value="{{ query }}" placeholder="Search users by name or username">
+</form>
+
+<div class="user-list">
+    {% for u in users %}
+        <div class="user-list__row">
+            <a href="{% url 'accounts:profile' u.username %}" class="user-list__user">
+                {% if u.profile.avatar %}
+                    <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}">
+                {% else %}
+                    <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+                {% endif %}
+                <div>
+                    <strong>{{ u.profile.name|default:u.username }}</strong>
+                    <div class="text-muted small">@{{ u.username }} · {{ u.post_count }} posts</div>
+                </div>
+            </a>
+            {% if user.is_authenticated and u != user %}
+                <button class="btn-follow js-follow-btn"
+                        data-username="{{ u.username }}"
+                        data-url="{% url 'accounts:toggle_follow' u.username %}">
+                    Follow
+                </button>
+            {% endif %}
+        </div>
+    {% empty %}
+        {% if query %}
+            <div class="empty-state"><i class="bi bi-search"></i><h2>No users found</h2></div>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}

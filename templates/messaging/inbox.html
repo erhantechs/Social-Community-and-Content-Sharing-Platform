@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Messages · SocialHub{% endblock %}
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Messages</h1>
+</div>
+
+<ul class="user-list">
+    {% for row in rows %}
+        <li class="user-list__row">
+            <a href="{% url 'messaging:thread' row.conv.pk %}" class="user-list__user">
+                {% if row.partner.profile.avatar %}
+                    <img src="{{ row.partner.profile.avatar.url }}" alt="{{ row.partner.username }}">
+                {% else %}
+                    <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+                {% endif %}
+                <div>
+                    <strong>{{ row.partner.profile.name|default:row.partner.username }}</strong>
+                    <div class="text-muted small">
+                        {% if row.last %}{{ row.last.body|truncatechars:50 }} · {{ row.last.created_at|timesince }} ago
+                        {% else %}No messages yet{% endif %}
+                    </div>
+                </div>
+            </a>
+            {% if row.unread %}<span class="side-nav__badge">{{ row.unread }}</span>{% endif %}
+        </li>
+    {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-chat-dots"></i>
+            <h2>No conversations yet</h2>
+            <p>Visit a user's profile and click "Message" to start chatting.</p>
+        </div>
+    {% endfor %}
+</ul>
+{% endblock %}

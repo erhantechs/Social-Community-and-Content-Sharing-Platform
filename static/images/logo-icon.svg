@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" role="img" aria-label="SocialHub">
+  <title>SocialHub</title>
+  <defs>
+    <linearGradient id="iconPurple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#b3a4ff"/>
+      <stop offset="100%" stop-color="#6e6df0"/>
+    </linearGradient>
+    <linearGradient id="iconPink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#ffb3d1"/>
+      <stop offset="100%" stop-color="#ff5e9c"/>
+    </linearGradient>
+    <radialGradient id="iconShine" cx="0.3" cy="0.3" r="0.7">
+      <stop offset="0%"  stop-color="#fff" stop-opacity="0.5"/>
+      <stop offset="60%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <circle cx="36" cy="28" r="18" fill="url(#iconPink)"/>
+  <circle cx="20" cy="28" r="18" fill="url(#iconPurple)"/>
+  <circle cx="20" cy="28" r="18" fill="url(#iconShine)"/>
+  <circle cx="28" cy="28" r="3.6" fill="#fff" opacity="0.95"/>
+</svg>

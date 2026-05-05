@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Edit profile · SocialHub{% endblock %}
+
+{% block content %}
+<div class="card-block">
+    <h2>Edit profile</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        <h3 class="h6 mt-3">Account</h3>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">First name</label>
+                {{ user_form.first_name }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Last name</label>
+                {{ user_form.last_name }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Email</label>
+                {{ user_form.email }}
+                {% for err in user_form.email.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <h3 class="h6 mt-4">Profile</h3>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Display name</label>
+                {{ profile_form.display_name }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Location</label>
+                {{ profile_form.location }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Website</label>
+                {{ profile_form.website }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Bio</label>
+                {{ profile_form.bio }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Avatar</label>
+                {{ profile_form.avatar }}
+                {% for err in profile_form.avatar.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Cover image</label>
+                {{ profile_form.cover }}
+                {% for err in profile_form.cover.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Interests</label>
+                <div class="checkbox-grid">
+                    {{ profile_form.interests }}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-dark">Save changes</button>
+            <a href="{% url 'accounts:profile' user.username %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

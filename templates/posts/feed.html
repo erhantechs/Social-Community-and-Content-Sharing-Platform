@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Feed · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Feeds</h1>
+    <div class="feed-tabs">
+        <a href="?tab=recents" class="feed-tabs__link {% if active_tab == 'recents' %}feed-tabs__link--active{% endif %}">Recents</a>
+        <a href="?tab=friends" class="feed-tabs__link {% if active_tab == 'friends' %}feed-tabs__link--active{% endif %}">Friends</a>
+        <a href="?tab=popular" class="feed-tabs__link {% if active_tab == 'popular' %}feed-tabs__link--active{% endif %}">Popular</a>
+    </div>
+</div>
+
+<div class="feed-list">
+    {% for post in posts %}
+        {% include "partials/_post_card.html" with post=post %}
+    {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-megaphone"></i>
+            <h2>Your feed is quiet</h2>
+            <p>Follow people to see their posts here, or share something yourself.</p>
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="{% url 'posts:explore' %}" class="btn btn-outline-dark">Explore</a>
+                <a href="{% url 'posts:create' %}" class="btn btn-dark">New post</a>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% include "partials/_pagination.html" %}
+
+{# ----- Quick composer (Share something) ----- #}
+{% if user.is_authenticated %}
+<form action="{% url 'posts:quick_create' %}" method="post" enctype="multipart/form-data" class="composer js-composer">
+    {% csrf_token %}
+    <div class="composer__top">
+        {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="composer__avatar">
+        {% else %}
+            <div class="composer__avatar avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+        {% endif %}
+        <input type="text" name="body" class="composer__input" placeholder="Share something…" maxlength="2000" required>
+    </div>
+
+    {# Image preview area (populated by JS when a file is selected) #}
+    <div class="composer__preview js-composer-preview" hidden>
+        <img class="js-composer-preview-img" alt="Preview">
+        <button type="button" class="composer__preview-clear js-composer-preview-clear" aria-label="Remove image">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <div class="composer__bottom">
+        <label class="composer__icon-btn">
+            <i class="bi bi-image"></i> Image
+            <input type="file" name="image" accept="image/*" hidden class="js-composer-image">
+        </label>
+        <span class="composer__icon-btn">
+            <i class="bi bi-geo-alt"></i>
+            <input type="text" name="location" placeholder="Location" class="composer__inline-input">
+        </span>
+        <select name="visibility" class="composer__select">
+            <option value="public">Public</option>
+            <option value="friends">Friends</option>
+            <option value="private">Private</option>
+        </select>
+        <button type="submit" class="composer__send">Send</button>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,83 @@
+{% load post_extras %}
+{# Reusable post card. Expects `post` in context. #}
+<article class="post-card" data-post-id="{{ post.id }}">
+    <header class="post-card__header">
+        <a href="{% url 'accounts:profile' post.author.username %}" class="post-card__author">
+            {% if post.author.profile.avatar %}
+                <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
+            {% else %}
+                <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+            {% endif %}
+            <div class="post-card__author-text">
+                <strong>{{ post.author.profile.name|default:post.author.username }}</strong>
+                <span class="post-card__time" title="{{ post.created_at }}">{{ post.created_at|timesince }} ago</span>
+            </div>
+        </a>
+
+        {% if user == post.author %}
+        <div class="dropdown">
+            <button class="post-card__menu" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{% url 'posts:update' post.pk %}"><i class="bi bi-pencil"></i> Edit</a></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'posts:delete' post.pk %}"><i class="bi bi-trash"></i> Delete</a></li>
+            </ul>
+        </div>
+        {% endif %}
+    </header>
+
+    <div class="post-card__body">
+        <p>{{ post.body|linkify_post }}</p>
+        {% if post.location %}<div class="post-card__location"><i class="bi bi-geo-alt"></i> {{ post.location }}</div>{% endif %}
+    </div>
+
+    {% if post.image or post.extra_images.all %}
+        <div class="post-card__media">
+            {% if post.image %}
+                <a href="{% url 'posts:detail' post.pk %}" class="post-card__media-main">
+                    <img src="{{ post.image.url }}" alt="Post image">
+                </a>
+            {% endif %}
+            {% for img in post.extra_images.all|slice:":2" %}
+                <a href="{% url 'posts:detail' post.pk %}" class="post-card__media-side">
+                    <img src="{{ img.image.url }}" alt="Extra image">
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <footer class="post-card__footer">
+        <button type="button"
+                class="post-card__action js-like-btn {% if post.is_liked %}post-card__action--active{% endif %}"
+                data-url="{% url 'posts:toggle_like' post.pk %}"
+                data-post-id="{{ post.id }}">
+            <i class="bi {% if post.is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+            <span class="js-like-label">{% if post.is_liked %}Liked{% else %}Like{% endif %}</span>
+            <span class="js-like-count">{{ post.like_count|default_if_none:post.likes_count }}</span>
+        </button>
+
+        <a href="{% url 'posts:detail' post.pk %}#comments" class="post-card__action">
+            <i class="bi bi-chat"></i> Comment
+            <span>{{ post.comment_count|default_if_none:post.comments_count }}</span>
+        </a>
+
+        {% if user.is_authenticated %}
+            <button type="button"
+                    class="post-card__action js-bookmark-btn {% if post.is_bookmarked %}post-card__action--bookmarked{% endif %}"
+                    data-url="{% url 'posts:toggle_bookmark' post.pk %}"
+                    aria-label="Save post">
+                <i class="bi {% if post.is_bookmarked %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
+                <span class="js-bookmark-label">{% if post.is_bookmarked %}Saved{% else %}Save{% endif %}</span>
+            </button>
+        {% endif %}
+
+        {% if post.interests.all %}
+            <div class="post-card__interests">
+                {% for tag in post.interests.all|slice:":3" %}
+                    <a href="{% url 'posts:explore' %}?interest={{ tag.slug }}" class="badge bg-light text-dark">#{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </footer>
+</article>

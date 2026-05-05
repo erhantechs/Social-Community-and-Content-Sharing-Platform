@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ list_type }} of {{ profile_user.username }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'accounts:profile' profile_user.username %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to profile</a>
+
+<div class="feed-header">
+    <h1 class="feed-title">{{ profile_user.profile.name }} — {{ list_type }}</h1>
+</div>
+
+<div class="user-list">
+    {% for f in follows %}
+        {% with target=f.follower|default_if_none:f.follower %}
+        {% if use_field == 'follower' %}{% with u=f.follower %}
+            <div class="user-list__row">
+                <a href="{% url 'accounts:profile' u.username %}" class="user-list__user">
+                    {% if u.profile.avatar %}
+                        <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}">
+                    {% else %}
+                        <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+                    {% endif %}
+                    <div>
+                        <strong>{{ u.profile.name|default:u.username }}</strong>
+                        <div class="text-muted small">@{{ u.username }}</div>
+                    </div>
+                </a>
+            </div>
+        {% endwith %}{% else %}{% with u=f.following %}
+            <div class="user-list__row">
+                <a href="{% url 'accounts:profile' u.username %}" class="user-list__user">
+                    {% if u.profile.avatar %}
+                        <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}">
+                    {% else %}
+                        <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+                    {% endif %}
+                    <div>
+                        <strong>{{ u.profile.name|default:u.username }}</strong>
+                        <div class="text-muted small">@{{ u.username }}</div>
+                    </div>
+                </a>
+            </div>
+        {% endwith %}{% endif %}
+        {% endwith %}
+    {% empty %}
+        <div class="empty-state"><i class="bi bi-people"></i><h2>No {{ list_type|lower }} yet</h2></div>
+    {% endfor %}
+</div>
+{% endblock %}

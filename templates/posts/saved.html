@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Saved posts · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Saved posts</h1>
+</div>
+
+<div class="feed-list">
+    {% for post in posts %}
+        {% include "partials/_post_card.html" with post=post %}
+    {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-bookmark"></i>
+            <h2>No saved posts yet</h2>
+            <p>Tap the bookmark icon on any post to save it for later.</p>
+            <a href="{% url 'posts:feed' %}" class="btn btn-dark">Back to feed</a>
+        </div>
+    {% endfor %}
+</div>
+
+{% include "partials/_pagination.html" %}
+{% endblock %}

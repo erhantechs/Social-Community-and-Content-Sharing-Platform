@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load post_extras %}
+
+{% block title %}Post by {{ post.author.username }} · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'posts:feed' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to feed</a>
+
+<div class="post-detail">
+    {% include "partials/_post_card.html" with post=post %}
+
+    <section class="comments-section" id="comments">
+        <h2 class="comments-section__title">
+            <i class="bi bi-chat"></i> Comments ({{ comments.count }})
+        </h2>
+
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'posts:comment_create' post.pk %}" class="comment-form">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="composer__avatar">
+                {% else %}
+                    <div class="composer__avatar avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+                {% endif %}
+                <input type="text" name="body" class="form-control" placeholder="Write a comment…" maxlength="1000" required>
+                <button type="submit" class="btn btn-dark">Post</button>
+            </div>
+        </form>
+        {% else %}
+            <p class="text-muted small"><a href="{% url 'accounts:login' %}">Log in</a> to comment.</p>
+        {% endif %}
+
+        <ul class="comment-list">
+            {% for comment in comments %}
+                {% include "partials/_comment.html" with comment=comment depth=0 %}
+            {% empty %}
+                <li class="empty-tiny">Be the first to comment.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+{% endblock %}

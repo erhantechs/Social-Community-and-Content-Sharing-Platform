@@ -1,0 +1,255 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#9b8cf0">
+    <meta name="description" content="SocialHub — a modern social community and content sharing platform.">
+    <title>{% block title %}SocialHub{% endblock %}</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32.png' %}?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16.png' %}?v=2">
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}?v=2">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}?v=2">
+    <link rel="mask-icon" href="{% static 'images/favicon.svg' %}?v=2" color="#9b8cf0">
+
+    <!-- Bootstrap 5 + Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=3">
+    {% block extra_head %}{% endblock %}
+
+    {# Apply saved theme synchronously to avoid a light-mode flash. #}
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("socialhub-theme");
+          if (!t) {
+            t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
+</head>
+<body class="{% block body_class %}app-shell{% endblock %}">
+
+{% block layout %}
+<div class="app-bg">
+    <div class="app-frame">
+
+        {# ------- LEFT SIDEBAR ------- #}
+        <aside class="sidebar-left" aria-label="Primary navigation">
+            <a href="{% url 'posts:feed' %}" class="brand">
+                <img src="{% static 'images/logo-icon.svg' %}" alt="" class="brand__icon" width="32" height="32">
+                <span class="brand__text">SocialHub</span>
+            </a>
+
+            <div class="profile-card">
+                <div class="profile-card__cover"></div>
+                <a href="{% if user.is_authenticated %}{% url 'accounts:profile' user.username %}{% else %}{% url 'accounts:login' %}{% endif %}" class="profile-card__avatar-link">
+                    {% if user.is_authenticated and user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="profile-card__avatar">
+                    {% else %}
+                        <div class="profile-card__avatar profile-card__avatar--placeholder">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    {% endif %}
+                </a>
+                <div class="profile-card__name">
+                    {% if user.is_authenticated %}
+                        {{ user.profile.name }}
+                    {% else %}
+                        Welcome
+                    {% endif %}
+                </div>
+                <div class="profile-card__handle">
+                    {% if user.is_authenticated %}@{{ user.username }}{% else %}Please log in{% endif %}
+                </div>
+            </div>
+
+            <nav class="side-nav" aria-label="Primary">
+                <a href="{% url 'posts:feed' %}" class="side-nav__item {% if request.resolver_match.url_name == 'feed' %}side-nav__item--active{% endif %}">
+                    <i class="bi bi-house-door"></i> News Feed
+                </a>
+                <a href="{% if user.is_authenticated %}{% url 'messaging:inbox' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
+                    <i class="bi bi-chat-dots"></i> Messages
+                    {% if unread_message_count %}
+                        <span class="side-nav__badge">{{ unread_message_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% if user.is_authenticated %}{% url 'notifications:list' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
+                    <i class="bi bi-bell"></i> Notifications
+                    {% if unread_notification_count %}
+                        <span class="side-nav__badge">{{ unread_notification_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'posts:explore' %}" class="side-nav__item {% if request.resolver_match.url_name == 'explore' %}side-nav__item--active{% endif %}">
+                    <i class="bi bi-globe"></i> Forums
+                </a>
+                <a href="{% if user.is_authenticated %}{% url 'accounts:following' user.username %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
+                    <i class="bi bi-people"></i> Friends
+                    {% if user.is_authenticated and user.following.count %}
+                        <span class="side-nav__badge">{{ user.following.count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% if user.is_authenticated %}{% url 'posts:saved' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item {% if request.resolver_match.url_name == 'saved' %}side-nav__item--active{% endif %}">
+                    <i class="bi bi-bookmark"></i> Saved
+                </a>
+                <a href="{% if user.is_authenticated %}{% url 'accounts:edit_profile' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+            </nav>
+
+            <div class="download-card">
+                <div class="download-card__avatars">
+                    <span class="dot dot--purple"></span>
+                    <span class="dot dot--pink"></span>
+                </div>
+                <div class="download-card__title">Invite friends</div>
+                <div class="download-card__subtitle">Share SocialHub</div>
+            </div>
+
+            <button type="button" class="theme-toggle js-theme-toggle" aria-label="Toggle dark mode">
+                <i class="bi bi-moon-stars theme-toggle__moon"></i>
+                <i class="bi bi-sun theme-toggle__sun"></i>
+                <span class="theme-toggle__label">Dark mode</span>
+            </button>
+
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'accounts:logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button class="btn-link-logout" type="submit">
+                        <i class="bi bi-box-arrow-right"></i> Log out
+                    </button>
+                </form>
+            {% endif %}
+        </aside>
+
+        {# ------- MAIN CONTENT ------- #}
+        <main class="main-col">
+            <div class="topbar">
+                <a href="{% url 'posts:feed' %}" class="topbar__brand" aria-label="SocialHub">
+                    <img src="{% static 'images/logo-icon.svg' %}" alt="" width="28" height="28">
+                </a>
+                <form action="{% url 'posts:search' %}" method="get" class="search-form">
+                    <i class="bi bi-search"></i>
+                    <input type="search" name="q" placeholder="Search posts, users, interests…" value="{{ request.GET.q|default:'' }}">
+                </form>
+
+                {% if user.is_authenticated %}
+                    {# Topbar notification bell with live dropdown #}
+                    <div class="topbar__bell-wrap">
+                        <button type="button"
+                                class="topbar__bell js-notif-bell"
+                                aria-label="Notifications"
+                                data-url="{% url 'notifications:dropdown' %}"
+                                data-mark-url="{% url 'notifications:mark_all_read' %}">
+                            <i class="bi bi-bell"></i>
+                            {% if unread_notification_count %}
+                                <span class="topbar__bell-badge js-notif-badge">{{ unread_notification_count }}</span>
+                            {% else %}
+                                <span class="topbar__bell-badge js-notif-badge" hidden>0</span>
+                            {% endif %}
+                        </button>
+
+                        <div class="notif-dropdown js-notif-dropdown" hidden>
+                            <div class="notif-dropdown__head">
+                                <strong>Notifications</strong>
+                                <button type="button" class="btn-link-tiny js-notif-mark-read">Mark all read</button>
+                            </div>
+                            <ul class="notif-dropdown__list js-notif-list">
+                                <li class="empty-tiny text-center py-3">Loading…</li>
+                            </ul>
+                            <a href="{% url 'notifications:list' %}" class="notif-dropdown__see-all">See all</a>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'posts:create' %}" class="btn-primary-pill"><i class="bi bi-plus-lg"></i> New post</a>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}" class="btn-primary-pill">Log in</a>
+                {% endif %}
+            </div>
+
+            {% if messages %}
+                <div class="messages-area">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+
+        {# ------- RIGHT SIDEBAR ------- #}
+        <aside class="sidebar-right">
+            {% block right_sidebar %}
+                {% include "partials/_right_sidebar.html" %}
+            {% endblock %}
+        </aside>
+
+    </div>
+</div>
+{% endblock %}
+
+{# Mobile bottom navigation — only visible on small screens (CSS-driven). #}
+{% if user.is_authenticated %}
+<nav class="bottom-nav" aria-label="Bottom navigation">
+    <a href="{% url 'posts:feed' %}" class="bottom-nav__item {% if request.resolver_match.url_name == 'feed' %}bottom-nav__item--active{% endif %}">
+        <i class="bi bi-house-door"></i><span>Home</span>
+    </a>
+    <a href="{% url 'posts:explore' %}" class="bottom-nav__item {% if request.resolver_match.url_name == 'explore' %}bottom-nav__item--active{% endif %}">
+        <i class="bi bi-compass"></i><span>Explore</span>
+    </a>
+    <a href="{% url 'posts:create' %}" class="bottom-nav__item bottom-nav__item--cta">
+        <span class="bottom-nav__plus"><i class="bi bi-plus-lg"></i></span>
+    </a>
+    <a href="{% url 'messaging:inbox' %}" class="bottom-nav__item">
+        <i class="bi bi-chat-dots"></i><span>Messages</span>
+        {% if unread_message_count %}<span class="bottom-nav__badge">{{ unread_message_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'accounts:profile' user.username %}" class="bottom-nav__item">
+        {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="" class="bottom-nav__avatar">
+        {% else %}
+            <i class="bi bi-person"></i>
+        {% endif %}
+        <span>Profile</span>
+    </a>
+</nav>
+{% endif %}
+
+<!-- Story modal — populated from data-attrs on story cards. -->
+<div class="modal fade" id="storyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered story-modal__dialog">
+        <div class="modal-content story-modal__content">
+            <button type="button" class="story-modal__close" data-bs-dismiss="modal" aria-label="Close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <div class="story-modal__progress">
+                <div class="story-modal__progress-bar"></div>
+            </div>
+            <div class="story-modal__header">
+                <img class="story-modal__avatar" alt="" src="">
+                <div class="story-modal__meta">
+                    <strong class="story-modal__author"></strong>
+                    <span class="story-modal__time text-muted small"></span>
+                </div>
+            </div>
+            <img class="story-modal__image" alt="" src="">
+            <div class="story-modal__caption"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/main.js' %}?v=3"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

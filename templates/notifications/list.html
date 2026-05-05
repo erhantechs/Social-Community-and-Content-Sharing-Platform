@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Notifications</h1>
+</div>
+
+<ul class="notif-list">
+    {% for n in notifications %}
+        <li class="notif-list__item {% if not n.is_read %}notif-list__item--unread{% endif %}">
+            <a href="{% url 'accounts:profile' n.actor.username %}" class="notif-list__avatar">
+                {% if n.actor.profile.avatar %}
+                    <img src="{{ n.actor.profile.avatar.url }}" alt="{{ n.actor.username }}">
+                {% else %}
+                    <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+                {% endif %}
+            </a>
+            <div class="notif-list__body">
+                <div>
+                    <strong>{{ n.actor.profile.name|default:n.actor.username }}</strong>
+                    {{ n.message }}
+                    {% if n.post %}
+                        — <a href="{% url 'posts:detail' n.post.pk %}">"{{ n.post.body|truncatewords:6 }}"</a>
+                    {% endif %}
+                </div>
+                <div class="text-muted small">{{ n.created_at|timesince }} ago</div>
+            </div>
+        </li>
+    {% empty %}
+        <div class="empty-state"><i class="bi bi-bell"></i><h2>No notifications yet</h2></div>
+    {% endfor %}
+</ul>
+{% endblock %}

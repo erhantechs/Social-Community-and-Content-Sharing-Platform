@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Explore · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Explore</h1>
+    {% if current_interest %}
+        <a href="{% url 'posts:explore' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-x"></i> Clear filter
+        </a>
+    {% endif %}
+</div>
+
+<div class="feed-list">
+    {% for post in posts %}
+        {% include "partials/_post_card.html" with post=post %}
+    {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-compass"></i>
+            <h2>Nothing to explore yet</h2>
+            <p>Be the first to share a public post.</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'posts:create' %}" class="btn btn-dark">Create a post</a>
+            {% else %}
+                <a href="{% url 'accounts:signup' %}" class="btn btn-dark">Join SocialHub</a>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+{% include "partials/_pagination.html" %}
+{% endblock %}

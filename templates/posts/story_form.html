@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}New story · SocialHub{% endblock %}
+
+{% block content %}
+<div class="card-block">
+    <h2>Add a story</h2>
+    <p class="text-muted">Stories disappear automatically after 24 hours.</p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Image</label>
+            <input type="file" name="image" accept="image/*" required
+                   class="form-control js-image-input"
+                   data-preview="story-image-preview">
+            {% for err in form.image.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            <div class="image-preview" id="story-image-preview" hidden></div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Caption (optional)</label>
+            {{ form.caption }}
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-dark">Post story</button>
+            <a href="{% url 'posts:feed' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

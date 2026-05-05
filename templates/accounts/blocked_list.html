@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Blocked accounts · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Blocked accounts</h1>
+</div>
+
+<div class="user-list">
+    {% for b in blocks %}
+        {% with target=b.blocked %}
+        <div class="user-list__row">
+            <div class="user-list__user">
+                {% if target.profile.avatar %}
+                    <img src="{{ target.profile.avatar.url }}" alt="{{ target.username }}">
+                {% else %}
+                    <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+                {% endif %}
+                <div>
+                    <strong>{{ target.profile.name|default:target.username }}</strong>
+                    <div class="text-muted small">@{{ target.username }} · blocked {{ b.created_at|timesince }} ago</div>
+                </div>
+            </div>
+            <form method="post" action="{% url 'accounts:toggle_block' target.username %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary btn-sm" type="submit">Unblock</button>
+            </form>
+        </div>
+        {% endwith %}
+    {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-slash-circle"></i>
+            <h2>You haven't blocked anyone</h2>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

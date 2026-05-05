@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Server error · SocialHub{% endblock %}
+{% block content %}
+<div class="empty-state">
+    <i class="bi bi-exclamation-triangle"></i>
+    <h2>Something went wrong</h2>
+    <p>We're sorry — please try again in a moment.</p>
+    <a href="{% url 'posts:feed' %}" class="btn btn-dark">Back to feed</a>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ partner.profile.name|default:partner.username }} · Messages{% endblock %}
+{% block content %}
+<a href="{% url 'messaging:inbox' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to messages</a>
+
+<div class="thread-header">
+    <a href="{% url 'accounts:profile' partner.username %}" class="user-list__user">
+        {% if partner.profile.avatar %}
+            <img src="{{ partner.profile.avatar.url }}" alt="{{ partner.username }}">
+        {% else %}
+            <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+        {% endif %}
+        <div>
+            <strong>{{ partner.profile.name|default:partner.username }}</strong>
+            <div class="text-muted small">@{{ partner.username }}</div>
+        </div>
+    </a>
+</div>
+
+<div class="thread">
+    {% for m in messages_list %}
+        <div class="thread__msg {% if m.sender == user %}thread__msg--mine{% endif %}">
+            <div class="thread__bubble">
+                {{ m.body|linebreaksbr }}
+                <div class="thread__time">{{ m.created_at|timesince }} ago</div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="empty-tiny text-center mt-3">No messages yet — say hi 👋</div>
+    {% endfor %}
+</div>
+
+<form method="post" class="thread-form">
+    {% csrf_token %}
+    <input type="text" name="body" class="form-control" placeholder="Type a message…" required maxlength="2000" autofocus>
+    <button class="btn btn-dark" type="submit">Send</button>
+</form>
+{% endblock %}

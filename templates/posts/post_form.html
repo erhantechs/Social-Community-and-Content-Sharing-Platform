@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title|default:"Post" }} · SocialHub{% endblock %}
+
+{% block content %}
+<div class="card-block">
+    <div class="card-block__header">
+        <h2>{{ title|default:"Post" }}</h2>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">What's on your mind?</label>
+            {{ form.body }}
+            {% for err in form.body.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Image</label>
+                <input type="file" name="image" accept="image/*"
+                       class="form-control js-image-input"
+                       data-preview="post-image-preview"
+                       {% if form.image.value %}value="{{ form.image.value }}"{% endif %}>
+                {% for err in form.image.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+                <div class="image-preview" id="post-image-preview" hidden>
+                    {% if form.instance.image %}<img src="{{ form.instance.image.url }}" alt="Current">{% endif %}
+                </div>
+                {% if form.instance.image %}
+                    <script>document.getElementById("post-image-preview").hidden = false;</script>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Location</label>
+                {{ form.location }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Visibility</label>
+                {{ form.visibility }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Interests</label>
+                <div class="checkbox-grid">
+                    {{ form.interests }}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-dark">{{ title|default:"Save" }}</button>
+            <a href="{% url 'posts:feed' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

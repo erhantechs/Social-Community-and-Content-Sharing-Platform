@@ -1,0 +1,84 @@
+{# Right sidebar: Stories, Suggestions, Recommendations #}
+
+{# ----- Stories ----- #}
+<section class="card-block">
+    <div class="card-block__header">
+        <h3>Stories</h3>
+        {% if user.is_authenticated %}
+            <a href="{% url 'posts:story_create' %}" class="card-block__action" title="Add story">
+                <i class="bi bi-plus-circle"></i>
+            </a>
+        {% endif %}
+    </div>
+    <div class="stories-grid">
+        {% for story in stories|slice:":2" %}
+            <button type="button" class="story-card js-story-open"
+                    data-image="{{ story.image.url }}"
+                    data-author="{{ story.author.profile.name|default:story.author.username }}"
+                    data-username="{{ story.author.username }}"
+                    data-avatar="{% if story.author.profile.avatar %}{{ story.author.profile.avatar.url }}{% endif %}"
+                    data-caption="{{ story.caption|default:'' }}"
+                    data-time="{{ story.created_at|timesince }} ago">
+                <img src="{{ story.image.url }}" alt="{{ story.caption|default:story.author.username }}">
+                <div class="story-card__author">
+                    {% if story.author.profile.avatar %}
+                        <img src="{{ story.author.profile.avatar.url }}" alt="{{ story.author.username }}">
+                    {% endif %}
+                    <span>{{ story.author.profile.name|truncatechars:10 }}</span>
+                </div>
+            </button>
+        {% empty %}
+            <div class="empty-tiny">No stories yet.</div>
+        {% endfor %}
+    </div>
+</section>
+
+{# ----- Suggestions ----- #}
+<section class="card-block">
+    <div class="card-block__header">
+        <h3>Suggestions</h3>
+    </div>
+    <ul class="suggest-list">
+        {% for u in suggestions %}
+            <li class="suggest-item" data-username="{{ u.username }}">
+                <div class="suggest-item__user">
+                    {% if u.profile.avatar %}
+                        <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}">
+                    {% else %}
+                        <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+                    {% endif %}
+                    <a href="{% url 'accounts:profile' u.username %}">
+                        <strong>{{ u.profile.name|default:u.username|truncatechars:14 }}</strong>
+                    </a>
+                </div>
+                {% if user.is_authenticated and u != user %}
+                    <button class="btn-follow js-follow-btn" data-username="{{ u.username }}" data-url="{% url 'accounts:toggle_follow' u.username %}">
+                        Follow
+                    </button>
+                {% endif %}
+            </li>
+        {% empty %}
+            <li class="empty-tiny">No suggestions right now.</li>
+        {% endfor %}
+    </ul>
+    {% if suggestions %}
+        <a class="see-all" href="{% url 'accounts:search_users' %}">See all</a>
+    {% endif %}
+</section>
+
+{# ----- Recommendations / Interests ----- #}
+<section class="card-block">
+    <div class="card-block__header">
+        <h3>Recommendations</h3>
+    </div>
+    <div class="reco-grid">
+        {% for interest in recommendations|slice:":4" %}
+            <a href="{% url 'posts:explore' %}?interest={{ interest.slug }}" class="reco-chip" style="background: {{ interest.color }};">
+                <span class="reco-chip__icon">{{ interest.icon|default:"#" }}</span>
+                <span class="reco-chip__label">{{ interest.name }}</span>
+            </a>
+        {% empty %}
+            <div class="empty-tiny">No interests yet.</div>
+        {% endfor %}
+    </div>
+</section>
