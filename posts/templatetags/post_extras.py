@@ -15,7 +15,10 @@ from django.utils.safestring import mark_safe
 register = template.Library()
 
 MENTION_RE = re.compile(r"@([A-Za-z0-9_]{1,30})")
-HASHTAG_RE = re.compile(r"(?<!\w)#([A-Za-z0-9_]{1,40})")
+# Negative lookbehind also rejects `&` so we don't turn HTML numeric entities
+# like `&#x27;` (apostrophe) or `&#39;` into a fake "#x27" hashtag link after
+# the body has been HTML-escaped.
+HASHTAG_RE = re.compile(r"(?<![\w&])#([A-Za-z0-9_]{1,40})")
 
 
 def _replace_mentions_and_hashtags(escaped_text):
