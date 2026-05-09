@@ -10,6 +10,8 @@ The UI is inspired by a contemporary social-media dashboard design: a left sideb
 
 > Term project for the Django course. The code aims to be production-quality so it can be deployed and presented as-is.
 
+> **Developed by Erhan Er.**
+
 ---
 
 ## Table of contents
@@ -24,8 +26,10 @@ The UI is inspired by a contemporary social-media dashboard design: a left sideb
 8. [Seeding demo data](#seeding-demo-data)
 9. [Screenshots](#screenshots)
 10. [Deployment](#deployment)
-11. [Grading-scheme alignment](#grading-scheme-alignment)
-12. [License](#license)
+11. [License](#license)
+12. [Demo accounts](#demo-accounts)
+13. [Why Django?](#why-django--how-and-why-django-powers-this-project)
+14. [Run on your own machine — step by step](#-run-this-project-on-your-own-machine--step-by-step)
 
 ---
 
@@ -201,9 +205,7 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000/ in a browser. The root URL redirects to the feed.
 
-After running `seed`, you can log in as any demo user:
-- Username: `george_lobko`, `vitaly_boyko`, `nick_shelburne`, `brittni_lando`, `ivan_shev`, `anatoly_p`, `lolita_earns`, `silena`
-- Password: `DemoPass!234`
+After running `seed`, you can log in as any demo user. The full list of usernames + passwords is in the [Demo accounts](#demo-accounts) section below — every demo user shares the same password: `DemoPass!234`.
 
 ---
 
@@ -317,22 +319,6 @@ python manage.py runserver
 
 ---
 
-## Grading-scheme alignment
-
-| Criterion                   | Pts | How it's covered |
-|-----------------------------|-----|------------------|
-| Core Functionality          | 25  | All required features (auth, posts CRUD, images, likes, comments, follows, feed, explore, search, profile, stories) implemented. |
-| Database Design             | 15  | Eight related models, FK + M2M relationships, `related_name`, timestamps, `__str__`, indexes, `UniqueConstraint` for likes/follows, `CheckConstraint` against self-follow. |
-| Frontend & UX               | 15  | Bootstrap-based responsive UI with custom dashboard CSS that mirrors the reference design — sidebar nav, profile card, card-based feed, stories grid, suggestions list, interest chips, composer, hover states, empty states, error messages. |
-| Advanced Features           | 15  | Auth + permissions, AJAX likes & follows, search, pagination, query optimization, DB constraints, signals, custom 404/500. |
-| Code Quality                | 10  | Apps separated by concern; no N+1 queries; meaningful names; signals; class-based views where they help; thin views. |
-| Documentation               | 10  | This README, plus inline docstrings on each module, plus a `seed` management command for demos. |
-| Testing                     | 5   | 32 tests covering signup, login, follow/unfollow, post CRUD, post permissions, likes, comments, feed filtering, search. |
-| Deployment                  | 5   | `requirements.txt`, `Procfile`, `runtime.txt`, `.env.example`, WhiteNoise, security headers, deployment notes for Render & PythonAnywhere. |
-| **Bonus**                   | 5   | Notifications app with unread-badge context processor; 24-hour stories with auto-expiry; interest-based content filtering; seed command for demo data. |
-
----
-
 ## License
 
 MIT — feel free to learn from, fork, and adapt.
@@ -345,7 +331,9 @@ After running `python manage.py seed`, log in with any of these.
 
 > ⚠️ **Development credentials only.** Change them (or wipe the demo data with `python manage.py seed --clear` and create your own users) before deploying anywhere public.
 
-### Admin
+### Admin (superuser)
+
+The admin account is created when you run `python manage.py createsuperuser` (Step 6 in the walkthrough below). Use whatever username and password you typed at the prompt. The convention used throughout this project's documentation is:
 
 | URL | Username | Password |
 |-----|----------|----------|
@@ -354,24 +342,28 @@ After running `python manage.py seed`, log in with any of these.
 If you didn't create the admin yet:
 ```bash
 python manage.py createsuperuser
+# Username: admin
+# Email: (optional)
+# Password: AdminPass!234
+# Password (again): AdminPass!234
 ```
 
-### Demo users (10 — all share the same password)
+### Demo users (10 — created by the `seed` command)
 
-> **Password for every demo user:** `DemoPass!234`
+Every demo user shares the same password for simplicity: **`DemoPass!234`**
 
-| # | Username | Full name | Location | Role |
-|---|----------|-----------|----------|------|
-| 1 | `emma_wilson` | Emma Wilson | Stockholm, Sweden | Product designer |
-| 2 | `liam_anderson` | Liam Anderson | Dublin, Ireland | Backend engineer |
-| 3 | `sophia_martinez` | Sophia Martinez | Lisbon, Portugal | Travel writer |
-| 4 | `noah_thompson` | Noah Thompson | Banff, Canada | Mountain guide & photographer |
-| 5 | `olivia_garcia` | Olivia Garcia | Madrid, Spain | Pastry chef |
-| 6 | `ethan_roberts` | Ethan Roberts | Berlin, Germany | Indie game developer |
-| 7 | `isabella_walker` | Isabella Walker | Bali, Indonesia | Yoga teacher |
-| 8 | `mason_cooper` | Mason Cooper | New Orleans, USA | Jazz drummer |
-| 9 | `ava_mitchell` | Ava Mitchell | Cape Town, South Africa | Marine biologist |
-| 10 | `lucas_bennett` | Lucas Bennett | Athens, Greece | Architect |
+| # | Username | Password | Full name | Location | Role |
+|---|----------|----------|-----------|----------|------|
+| 1 | `emma_wilson` | `DemoPass!234` | Emma Wilson | Stockholm, Sweden | Product designer |
+| 2 | `liam_anderson` | `DemoPass!234` | Liam Anderson | Dublin, Ireland | Backend engineer |
+| 3 | `sophia_martinez` | `DemoPass!234` | Sophia Martinez | Lisbon, Portugal | Travel writer |
+| 4 | `noah_thompson` | `DemoPass!234` | Noah Thompson | Banff, Canada | Mountain guide & photographer |
+| 5 | `olivia_garcia` | `DemoPass!234` | Olivia Garcia | Madrid, Spain | Pastry chef |
+| 6 | `ethan_roberts` | `DemoPass!234` | Ethan Roberts | Berlin, Germany | Indie game developer |
+| 7 | `isabella_walker` | `DemoPass!234` | Isabella Walker | Bali, Indonesia | Yoga teacher |
+| 8 | `mason_cooper` | `DemoPass!234` | Mason Cooper | New Orleans, USA | Jazz drummer |
+| 9 | `ava_mitchell` | `DemoPass!234` | Ava Mitchell | Cape Town, South Africa | Marine biologist |
+| 10 | `lucas_bennett` | `DemoPass!234` | Lucas Bennett | Athens, Greece | Architect |
 
 Each demo user has a real avatar, cover image, posts with photos, 1–2 stories, follow relationships, likes and comments — populated automatically by the `seed` command.
 
@@ -623,3 +615,7 @@ When you come back later, you only need to repeat steps **2 (activate venv)** an
 ---
 
 That's it. You should now have a fully working SocialHub running locally. If you run into something not covered above, open an issue on GitHub or check the rest of this README — most edge cases are documented in the *Setup* and *Deployment* sections higher up.
+
+---
+
+<p align="center"><strong>Developed by Erhan Er.</strong></p>

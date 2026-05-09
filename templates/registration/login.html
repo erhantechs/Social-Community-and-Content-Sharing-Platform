@@ -24,10 +24,33 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                {{ form.password }}
+                <div class="password-wrap">
+                    {{ form.password }}
+                    <button type="button" class="password-toggle js-password-toggle" aria-label="Show password" aria-pressed="false">
+                        <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn btn-dark w-100">Log in</button>
         </form>
+
+        {% if oauth_google_enabled or oauth_github_enabled %}
+        <div class="auth-divider"><span>or</span></div>
+        <div class="oauth-buttons">
+            {% if oauth_google_enabled %}
+                <a href="{% url 'accounts:oauth_start' provider='google' %}" class="btn btn-oauth btn-oauth--google w-100">
+                    <i class="bi bi-google" aria-hidden="true"></i>
+                    <span>Continue with Google</span>
+                </a>
+            {% endif %}
+            {% if oauth_github_enabled %}
+                <a href="{% url 'accounts:oauth_start' provider='github' %}" class="btn btn-oauth btn-oauth--github w-100 mt-2">
+                    <i class="bi bi-github" aria-hidden="true"></i>
+                    <span>Continue with GitHub</span>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
 
         <div class="auth-card__footer">
             <a href="{% url 'accounts:password_reset' %}">Forgot password?</a>

@@ -1,0 +1,83 @@
+{% load avatar_tags %}
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} · {{ community.name }} · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'communities:event_list' community.slug %}" class="back-link">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to events
+</a>
+
+<article class="event-detail">
+    {% if event.cover %}
+        <img src="{{ event.cover.url }}" alt="{{ event.title }} cover" class="event-detail__cover">
+    {% endif %}
+    <header class="event-detail__header">
+        <h1 class="event-detail__title">{{ event.title }}</h1>
+        <div class="event-detail__meta text-muted">
+            <span><i class="bi bi-collection"></i> <a href="{% url 'communities:detail' community.slug %}">{{ community.name }}</a></span>
+            <span><i class="bi bi-clock"></i> {{ event.starts_at|date:"l, F j · H:i" }}{% if event.ends_at %} → {{ event.ends_at|date:"H:i" }}{% endif %}</span>
+            {% if event.location %}<span><i class="bi bi-geo-alt"></i> {{ event.location }}</span>{% endif %}
+            {% if event.created_by %}<span><i class="bi bi-person"></i> Hosted by {{ event.created_by.profile.name|default:event.created_by.username }}</span>{% endif %}
+        </div>
+        {% if event.is_past %}
+            <div class="event-detail__badge text-muted small"><i class="bi bi-hourglass-bottom"></i> This event has ended.</div>
+        {% endif %}
+    </header>
+
+    {% if event.description %}
+        <div class="event-detail__body">{{ event.description|linebreaks }}</div>
+    {% endif %}
+
+    {% if user.is_authenticated and not event.is_past %}
+        <div class="event-detail__rsvp">
+            <strong>Are you going?</strong>
+            <form method="post" action="{% url 'communities:event_rsvp' community.slug event.pk %}" class="d-inline-flex gap-2 ms-2 flex-wrap">
+                {% csrf_token %}
+                <button type="submit" name="status" value="going"
+                        class="btn btn-sm {% if my_status == 'going' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                    <i class="bi bi-check2-circle"></i> Going
+                </button>
+                <button type="submit" name="status" value="interested"
+                        class="btn btn-sm {% if my_status == 'interested' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+                    <i class="bi bi-star"></i> Interested
+                </button>
+                <button type="submit" name="status" value="not_going"
+                        class="btn btn-sm {% if my_status == 'not_going' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                    <i class="bi bi-x-circle"></i> Not going
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+    <div class="event-detail__attendees">
+        <h3>{{ event.rsvp_count }} going</h3>
+        {% if rsvps %}
+            <ul class="user-list">
+                {% for r in rsvps %}
+                    <li class="user-list__row">
+                        <a href="{% url 'accounts:profile' r.user.username %}" class="user-list__user">
+                            {% avatar r.user size="sm" %}
+                            <strong>{{ r.user.profile.name|default:r.user.username }}</strong>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted small">Be the first to RSVP.</p>
+        {% endif %}
+    </div>
+
+    {% if is_admin %}
+        <div class="event-detail__admin mt-4 pt-3 border-top">
+            <form method="post" action="{% url 'communities:event_delete' community.slug event.pk %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Delete this event? This cannot be undone.');">
+                    <i class="bi bi-trash"></i> Delete event
+                </button>
+            </form>
+        </div>
+    {% endif %}
+</article>
+{% endblock %}

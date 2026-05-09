@@ -1,0 +1,41 @@
+# Python
+__pycache__
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.local
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+*.log
+logs/
+
+# Tooling
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# VCS / IDE / OS
+.git/
+.github/
+.gitignore
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+.claude/
+
+# Tests / docs we don't need at runtime
+docs/
+README.md
+README_TR.md
+LICENSE
+.pre-commit-config.yaml
+pyproject.toml

@@ -10,6 +10,8 @@ Arayüz, modern bir sosyal medya panosundan ilham alınarak tasarlandı: solda p
 
 > Django dersi dönem ödevi olarak hazırlandı. Proje, sunulduğu gibi deploy edilebilir kalitede yazıldı.
 
+> **Erhan Er tarafından geliştirildi.**
+
 ---
 
 ## İçindekiler
@@ -24,8 +26,10 @@ Arayüz, modern bir sosyal medya panosundan ilham alınarak tasarlandı: solda p
 8. [Demo verisi yükleme](#demo-verisi-yükleme)
 9. [Ekran görüntüleri](#ekran-görüntüleri)
 10. [Deployment](#deployment)
-11. [Notlandırma kriterleriyle eşleşme](#notlandırma-kriterleriyle-eşleşme)
-12. [Lisans](#lisans)
+11. [Lisans](#lisans)
+12. [Demo hesaplar (kullanıcı adı + parola)](#demo-hesaplar)
+13. [Bu projede Django'nun rolü](#bu-projede-djangonun-kullanımı-ve-önemi)
+14. [Adım adım kurulum (indirenler için)](#-projeyi-kendi-bilgisayarında-çalıştır--adım-adım)
 
 ---
 
@@ -175,9 +179,7 @@ python manage.py runserver
 
 http://127.0.0.1:8000/ adresini aç. Kök URL akışa yönlendirir.
 
-`seed` çalıştırdıysan, herhangi bir demo kullanıcı ile giriş yapabilirsin:
-- Kullanıcı: `george_lobko`, `vitaly_boyko`, `nick_shelburne`, `brittni_lando`, `ivan_shev`, `anatoly_p`, `lolita_earns`, `silena`
-- Parola: `DemoPass!234`
+`seed` çalıştırdıysan, herhangi bir demo kullanıcı ile giriş yapabilirsin. Tüm kullanıcı adlarının + parolaların bulunduğu liste için aşağıdaki [Demo hesaplar](#demo-hesaplar) bölümüne bak — tüm demo kullanıcıların parolası aynı: `DemoPass!234`.
 
 ---
 
@@ -293,22 +295,6 @@ Yakalama yönergesi için bkz. `docs/screenshots/README.md`.
 
 ---
 
-## Notlandırma kriterleriyle eşleşme
-
-| Kriter                       | Pts | Nasıl karşılanıyor |
-|------------------------------|-----|---------------------|
-| Core Functionality           | 25  | Tüm zorunlu özellikler (auth, posts CRUD, görseller, beğeni, yorum, takip, akış, explore, arama, profil, hikâyeler) implement edildi. |
-| Database Design              | 15  | Sekiz ilişkili model, FK + M2M, `related_name`, timestamp'ler, `__str__`, indeksler, beğeni/takip için `UniqueConstraint`, kendini takip etmeye karşı `CheckConstraint`. |
-| Frontend & UX                | 15  | Bootstrap + custom dashboard CSS, sidebar nav, profil kartı, kart tabanlı feed, hikâyeler grid, öneriler, ilgi çipleri, composer, hover state'ler, empty state'ler, hata mesajları. |
-| Advanced Features            | 15  | Auth + permissions, AJAX beğeni & takip, arama (hashtag desteği dahil), sayfalama, sorgu optimizasyonu, DB constraint'leri, signal'ler, custom 404/500, hashtag/mention linkifier, honeypot, login rate limit, sidebar cache. |
-| Code Quality                 | 10  | App'ler concern'e göre ayrılmış; N+1 yok; class-based view'lar; thin view'lar. |
-| Documentation                | 10  | Bu README + `README.md` (İngilizce) + `seed` komutu + her modülde docstring. |
-| Testing                      | 5   | 52 test: kayıt, giriş, takip, gönderi CRUD, izinler, beğeni, yorum, akış filtreleri, hikâye expiry, görünürlük, mention/hashtag, bildirim oluşumu, honeypot, throttle. |
-| Deployment                   | 5   | `requirements.txt`, `Procfile`, `runtime.txt`, `.env.example`, WhiteNoise, security header'ları, Render & PythonAnywhere notları. |
-| **Bonus**                    | 5   | Bildirimler (okunmamış sayaç + context processor), 24 saatlik hikâyeler, ilgi tabanlı içerik filtresi, hashtag/mention sistemi, seed komutu. |
-
----
-
 ## Lisans
 
 MIT — özgürce öğren, fork'la, uyarla.
@@ -321,7 +307,9 @@ MIT — özgürce öğren, fork'la, uyarla.
 
 > ⚠️ **Bu bilgiler yalnızca geliştirme içindir.** Projeyi herkese açık bir sunucuya deploy etmeden önce mutlaka değiştir (veya `python manage.py seed --clear` ile demo veriyi sil ve kendi kullanıcılarını oluştur).
 
-### Admin (yönetici)
+### Admin (yönetici / superuser)
+
+Admin hesabı, aşağıdaki adım adım kurulumun **6. adımı**nda `python manage.py createsuperuser` komutuyla oluşturuluyor. İstediğin kullanıcı adı ve parolayı verebilirsin; bu README'de örnek olarak şu değerler kullanılıyor:
 
 | URL | Kullanıcı adı | Parola |
 |-----|---------------|--------|
@@ -330,24 +318,28 @@ MIT — özgürce öğren, fork'la, uyarla.
 Henüz admin oluşturmadıysan:
 ```bash
 python manage.py createsuperuser
+# Username: admin
+# Email: (opsiyonel)
+# Password: AdminPass!234
+# Password (again): AdminPass!234
 ```
 
-### Demo kullanıcılar (10 adet — hepsinin parolası aynı)
+### Demo kullanıcılar (10 adet — `seed` komutu otomatik oluşturur)
 
-> **Tüm demo kullanıcılar için parola:** `DemoPass!234`
+Tüm demo kullanıcılar aynı parolayı paylaşır: **`DemoPass!234`**
 
-| # | Kullanıcı adı | Ad Soyad | Konum | Meslek |
-|---|----------|----------|-------|--------|
-| 1 | `emma_wilson` | Emma Wilson | Stockholm, İsveç | Ürün tasarımcısı |
-| 2 | `liam_anderson` | Liam Anderson | Dublin, İrlanda | Backend mühendisi |
-| 3 | `sophia_martinez` | Sophia Martinez | Lizbon, Portekiz | Seyahat yazarı |
-| 4 | `noah_thompson` | Noah Thompson | Banff, Kanada | Dağ rehberi & fotoğrafçı |
-| 5 | `olivia_garcia` | Olivia Garcia | Madrid, İspanya | Pasta şefi |
-| 6 | `ethan_roberts` | Ethan Roberts | Berlin, Almanya | Bağımsız oyun geliştirici |
-| 7 | `isabella_walker` | Isabella Walker | Bali, Endonezya | Yoga eğitmeni |
-| 8 | `mason_cooper` | Mason Cooper | New Orleans, ABD | Caz davulcusu |
-| 9 | `ava_mitchell` | Ava Mitchell | Cape Town, Güney Afrika | Deniz biyologu |
-| 10 | `lucas_bennett` | Lucas Bennett | Atina, Yunanistan | Mimar |
+| # | Kullanıcı adı | Parola | Ad Soyad | Konum | Meslek |
+|---|---------------|--------|----------|-------|--------|
+| 1 | `emma_wilson` | `DemoPass!234` | Emma Wilson | Stockholm, İsveç | Ürün tasarımcısı |
+| 2 | `liam_anderson` | `DemoPass!234` | Liam Anderson | Dublin, İrlanda | Backend mühendisi |
+| 3 | `sophia_martinez` | `DemoPass!234` | Sophia Martinez | Lizbon, Portekiz | Seyahat yazarı |
+| 4 | `noah_thompson` | `DemoPass!234` | Noah Thompson | Banff, Kanada | Dağ rehberi & fotoğrafçı |
+| 5 | `olivia_garcia` | `DemoPass!234` | Olivia Garcia | Madrid, İspanya | Pasta şefi |
+| 6 | `ethan_roberts` | `DemoPass!234` | Ethan Roberts | Berlin, Almanya | Bağımsız oyun geliştirici |
+| 7 | `isabella_walker` | `DemoPass!234` | Isabella Walker | Bali, Endonezya | Yoga eğitmeni |
+| 8 | `mason_cooper` | `DemoPass!234` | Mason Cooper | New Orleans, ABD | Caz davulcusu |
+| 9 | `ava_mitchell` | `DemoPass!234` | Ava Mitchell | Cape Town, Güney Afrika | Deniz biyologu |
+| 10 | `lucas_bennett` | `DemoPass!234` | Lucas Bennett | Atina, Yunanistan | Mimar |
 
 Her demo kullanıcının gerçek avatarı, kapak görseli, fotoğraflı gönderileri, 1–2 hikâyesi, takip ilişkileri, beğeni ve yorumları otomatik olarak `seed` komutuyla oluşturulur.
 
@@ -599,3 +591,7 @@ Daha sonra geri döndüğünde, sadece **Adım 2 (venv aktifleştir)** ve **Adı
 ---
 
 Hepsi bu kadar. Artık yerel olarak çalışan, tam işlevsel bir SocialHub'a sahipsin. Yukarıda kapsanmayan bir sorunla karşılaşırsan GitHub'da bir issue aç veya README'nin daha üst kısımlarındaki *Kurulum* ve *Deployment* bölümlerine bak — çoğu kenar durum orada belgelenmiş.
+
+---
+
+<p align="center"><strong>Erhan Er tarafından geliştirildi.</strong></p>

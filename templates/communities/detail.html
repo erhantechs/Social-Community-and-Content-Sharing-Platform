@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load avatar_tags %}
+
+{% block title %}{{ community.name }} · SocialHub{% endblock %}
+
+{% block content %}
+<div class="community-hero">
+    <div class="community-hero__cover" {% if community.cover %}style="background-image: url('{{ community.cover.url }}');"{% endif %}></div>
+    <div class="community-hero__row">
+        <div class="community-hero__avatar">
+            {% if community.avatar %}
+                <img src="{{ community.avatar.url }}" alt="{{ community.name }}">
+            {% else %}
+                <div class="community-hero__avatar-placeholder">{{ community.name|first|upper }}</div>
+            {% endif %}
+        </div>
+        <div class="community-hero__meta">
+            <h1 class="community-hero__name">{{ community.name }}</h1>
+            <div class="community-hero__chips">
+                <span><i class="bi bi-people-fill" aria-hidden="true"></i> {{ community.member_count }} {{ community.member_count|pluralize:"member,members" }}</span>
+                {% if community.privacy == 'private' %}
+                    <span><i class="bi bi-lock-fill" aria-hidden="true"></i> Private</span>
+                {% else %}
+                    <span><i class="bi bi-globe" aria-hidden="true"></i> Public</span>
+                {% endif %}
+                <span>· Created {{ community.created_at|date:"M Y" }}</span>
+            </div>
+            {% if community.description %}
+                <p class="community-hero__bio">{{ community.description }}</p>
+            {% endif %}
+        </div>
+        <div class="community-hero__actions">
+            {% if user.is_authenticated %}
+                {% if is_member %}
+                    {% if is_admin %}
+                        <a href="{% url 'communities:manage' community.slug %}" class="btn btn-outline-dark">
+                            <i class="bi bi-gear" aria-hidden="true"></i> Manage
+                        </a>
+                    {% endif %}
+                    {% if role != 'owner' %}
+                        <form method="post" action="{% url 'communities:leave' community.slug %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-secondary"
+                                    onclick="return confirm('Leave {{ community.name }}?');">
+                                Leave
+                            </button>
+                        </form>
+                    {% endif %}
+                {% elif has_pending %}
+                    <button type="button" class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-clock" aria-hidden="true"></i> Pending
+                    </button>
+                {% else %}
+                    <form method="post" action="{% url 'communities:join' community.slug %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                            {% if community.privacy == 'private' %}Request to join{% else %}Join{% endif %}
+                        </button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-dark">Log in to join</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-3">
+    <div class="col-lg-8">
+        {% if is_member %}
+            <a href="{% url 'posts:create' %}?community={{ community.slug }}" class="btn btn-outline-dark mb-3">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i> Post in {{ community.name }}
+            </a>
+        {% endif %}
+
+        <div class="feed-list">
+            {% for post in posts %}
+                {% include "partials/_post_card.html" with post=post %}
+            {% empty %}
+                <div class="empty-state">
+                    <i class="bi bi-chat-square-text" aria-hidden="true"></i>
+                    <h2>No posts yet</h2>
+                    {% if community.privacy == 'private' and not is_member %}
+                        <p>Join this community to see posts.</p>
+                    {% elif is_member %}
+                        <p>Be the first to post.</p>
+                    {% else %}
+                        <p>Check back soon.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        {% include "partials/_pagination.html" %}
+    </div>
+
+    <div class="col-lg-4">
+        <section class="card-block mb-3">
+            <div class="card-block__header">
+                <h3><i class="bi bi-calendar-event" aria-hidden="true"></i> Events</h3>
+                <a href="{% url 'communities:event_list' community.slug %}" class="card-block__action small">See all</a>
+            </div>
+            {% if upcoming_events %}
+                <ul class="event-list event-list--compact">
+                    {% for event in upcoming_events %}
+                        {% include "communities/_event_row.html" with event=event %}
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty-tiny">
+                    No upcoming events.
+                    {% if is_admin %}
+                        <a href="{% url 'communities:event_create' community.slug %}">Plan one</a>.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="card-block">
+            <div class="card-block__header"><h3>Members</h3></div>
+            <ul class="user-list">
+                {% for m in members_preview %}
+                    <li class="user-list__user">
+                        {% avatar m.user size="sm" %}
+                        <div>
+                            <a href="{% url 'accounts:profile' m.user.username %}">
+                                <strong>{{ m.user.profile.name|default:m.user.username|truncatechars:16 }}</strong>
+                            </a>
+                            <div class="text-muted small">{{ m.get_role_display }}</div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+</div>
+{% endblock %}

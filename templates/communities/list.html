@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Communities · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Communities</h1>
+    {% if user.is_authenticated %}
+        <a href="{% url 'communities:create' %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> New community
+        </a>
+    {% endif %}
+</div>
+
+<form method="get" class="search-form mb-3" role="search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <label for="community-search" class="visually-hidden">Search communities</label>
+    <input id="community-search" type="search" name="q" placeholder="Search communities…"
+           value="{{ query|default:'' }}" aria-label="Search communities">
+</form>
+
+{% if my_communities %}
+<section class="card-block">
+    <div class="card-block__header"><h3>Your communities</h3></div>
+    <div class="community-grid">
+        {% for c in my_communities %}
+            <a href="{% url 'communities:detail' c.slug %}" class="community-card community-card--mini">
+                {% if c.avatar %}
+                    <img src="{{ c.avatar.url }}" alt="" class="community-card__avatar">
+                {% else %}
+                    <div class="community-card__avatar community-card__avatar--placeholder">
+                        {{ c.name|first|upper }}
+                    </div>
+                {% endif %}
+                <div class="community-card__body">
+                    <strong>{{ c.name|truncatechars:24 }}</strong>
+                    <span class="text-muted small">{{ c.members_count }} {{ c.members_count|pluralize:"member,members" }}</span>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="card-block mt-3">
+    <div class="card-block__header"><h3>{% if query %}Search results{% else %}Discover{% endif %}</h3></div>
+    <div class="community-grid">
+        {% for c in communities %}
+            <a href="{% url 'communities:detail' c.slug %}" class="community-card">
+                <div class="community-card__cover" {% if c.cover %}style="background-image: url('{{ c.cover.url }}');"{% endif %}></div>
+                {% if c.avatar %}
+                    <img src="{{ c.avatar.url }}" alt="" class="community-card__avatar">
+                {% else %}
+                    <div class="community-card__avatar community-card__avatar--placeholder">
+                        {{ c.name|first|upper }}
+                    </div>
+                {% endif %}
+                <div class="community-card__body">
+                    <strong>{{ c.name|truncatechars:32 }}</strong>
+                    <p class="text-muted small">{{ c.description|truncatechars:80 }}</p>
+
+                    {% if c.preview_members %}
+                        <div class="community-card__members" aria-label="{{ c.members_count }} members">
+                            {% for m in c.preview_members %}
+                                {% if m.user.profile.avatar %}
+                                    <img src="{{ m.user.profile.avatar.url }}"
+                                         alt="" loading="lazy"
+                                         class="community-card__member"
+                                         title="{{ m.user.profile.name|default:m.user.username }}">
+                                {% else %}
+                                    <div class="community-card__member community-card__member--placeholder"
+                                         title="{{ m.user.username }}">
+                                        {{ m.user.username|first|upper }}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <span class="community-card__meta">
+                        <i class="bi bi-people-fill" aria-hidden="true"></i>
+                        {{ c.members_count }} {{ c.members_count|pluralize:"member,members" }}
+                        {% if c.privacy == 'private' %}
+                            <span aria-hidden="true">·</span>
+                            <i class="bi bi-lock-fill" aria-hidden="true"></i> Private
+                        {% endif %}
+                    </span>
+                </div>
+            </a>
+        {% empty %}
+            <div class="empty-state">
+                <i class="bi bi-people" aria-hidden="true"></i>
+                <h2>No communities yet</h2>
+                <p>Be the first to create one.</p>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'communities:create' %}" class="btn btn-dark">Create a community</a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% include "partials/_pagination.html" %}
+{% endblock %}

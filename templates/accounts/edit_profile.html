@@ -55,8 +55,14 @@
             </div>
             <div class="col-md-12">
                 <label class="form-label">Interests</label>
-                <div class="checkbox-grid">
-                    {{ profile_form.interests }}
+                <p class="text-muted small mb-2">Pick the topics you care about — they power your suggestions and recommendations.</p>
+                <div class="interest-chips">
+                    {% for choice in profile_form.interests %}
+                        <label class="interest-chip">
+                            {{ choice.tag }}
+                            <span>{{ choice.choice_label }}</span>
+                        </label>
+                    {% endfor %}
                 </div>
             </div>
         </div>

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load avatar_tags %}
+
+{% block title %}Manage {{ community.name }} · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'communities:detail' community.slug %}" class="back-link">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to {{ community.name }}
+</a>
+
+<div class="card-block">
+    <div class="card-block__header"><h2>Community settings</h2></div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="mb-3">
+            <label for="{{ form.name.id_for_label }}" class="form-label">Name</label>
+            {{ form.name }}
+            {% for err in form.name.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+            {{ form.description }}
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="{{ form.privacy.id_for_label }}" class="form-label">Privacy</label>
+                {{ form.privacy }}
+            </div>
+            <div class="col-md-4">
+                <label for="{{ form.avatar.id_for_label }}" class="form-label">Avatar</label>
+                {{ form.avatar }}
+            </div>
+            <div class="col-md-4">
+                <label for="{{ form.cover.id_for_label }}" class="form-label">Cover</label>
+                {{ form.cover }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-dark mt-3">Save changes</button>
+    </form>
+</div>
+
+<div class="card-block mt-3">
+    <div class="card-block__header"><h2>Members ({{ members.count }})</h2></div>
+
+    <ul class="user-list">
+        {% for m in members %}
+            <li class="user-list__user member-row">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    {% avatar m.user size="sm" %}
+                    <div>
+                        <a href="{% url 'accounts:profile' m.user.username %}">
+                            <strong>{{ m.user.profile.name|default:m.user.username }}</strong>
+                        </a>
+                        <div class="text-muted small">
+                            {{ m.get_role_display }}
+                            {% if m.status != 'active' %}
+                                <span class="badge bg-warning text-dark ms-1">{{ m.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if m.role != 'owner' %}
+                <div class="member-row__actions">
+                    {% if m.status == 'pending' %}
+                        <form method="post" action="{% url 'communities:member_action' community.slug m.user.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="approve">
+                            <button type="submit" class="btn btn-sm btn-dark">Approve</button>
+                        </form>
+                    {% endif %}
+                    {% if community.owner_id == user.id %}
+                        {% if m.role == 'member' %}
+                            <form method="post" action="{% url 'communities:member_action' community.slug m.user.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="promote">
+                                <button type="submit" class="btn btn-sm btn-outline-dark">Promote</button>
+                            </form>
+                        {% elif m.role == 'admin' %}
+                            <form method="post" action="{% url 'communities:member_action' community.slug m.user.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="demote">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Demote</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                    <form method="post" action="{% url 'communities:member_action' community.slug m.user.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="remove">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Remove {{ m.user.username }}?');">Remove</button>
+                    </form>
+                </div>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

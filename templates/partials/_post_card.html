@@ -1,66 +1,174 @@
-{% load post_extras %}
+{% load post_extras avatar_tags %}
 {# Reusable post card. Expects `post` in context. #}
-<article class="post-card" data-post-id="{{ post.id }}">
+<article class="post-card{% if post.pinned_at %} post-card--pinned{% endif %}" data-post-id="{{ post.id }}">
+    {% if post.pinned_at %}
+        <div class="post-card__pinned-badge" title="Pinned post">
+            <i class="bi bi-pin-angle-fill" aria-hidden="true"></i> Pinned
+        </div>
+    {% endif %}
     <header class="post-card__header">
         <a href="{% url 'accounts:profile' post.author.username %}" class="post-card__author">
-            {% if post.author.profile.avatar %}
-                <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
-            {% else %}
-                <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
-            {% endif %}
+            {% avatar post.author size="md" %}
             <div class="post-card__author-text">
                 <strong>{{ post.author.profile.name|default:post.author.username }}</strong>
                 <span class="post-card__time" title="{{ post.created_at }}">{{ post.created_at|timesince }} ago</span>
             </div>
         </a>
 
-        {% if user == post.author %}
+        {% if user.is_authenticated %}
+        {% with can_edit=user|user_eq:post.author can_pin=post|can_pin:user %}
+        {% if can_edit or can_pin %}
         <div class="dropdown">
-            <button class="post-card__menu" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots-vertical"></i>
+            <button class="post-card__menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Post options">
+                <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="{% url 'posts:update' post.pk %}"><i class="bi bi-pencil"></i> Edit</a></li>
-                <li><a class="dropdown-item text-danger" href="{% url 'posts:delete' post.pk %}"><i class="bi bi-trash"></i> Delete</a></li>
+                {% if can_pin %}
+                    <li>
+                        <form method="post" action="{% url 'posts:toggle_pin' post.pk %}" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item">
+                                {% if post.pinned_at %}
+                                    <i class="bi bi-pin-angle"></i> Unpin
+                                {% else %}
+                                    <i class="bi bi-pin-angle-fill"></i> Pin to top
+                                {% endif %}
+                            </button>
+                        </form>
+                    </li>
+                {% endif %}
+                {% if can_edit %}
+                    <li><a class="dropdown-item" href="{% url 'posts:update' post.pk %}"><i class="bi bi-pencil"></i> Edit</a></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'posts:delete' post.pk %}"><i class="bi bi-trash"></i> Delete</a></li>
+                {% endif %}
             </ul>
         </div>
         {% endif %}
+        {% endwith %}
+        {% endif %}
     </header>
 
+    {% if post.is_repost %}
+        <div class="post-card__repost-line">
+            <i class="bi bi-repeat" aria-hidden="true"></i>
+            <a href="{% url 'accounts:profile' post.author.username %}">{{ post.author.profile.name|default:post.author.username }}</a> reposted
+        </div>
+    {% endif %}
+
+    {% if post.community %}
+        <div class="post-card__community">
+            <i class="bi bi-collection" aria-hidden="true"></i>
+            posted in
+            <a href="{% url 'communities:detail' post.community.slug %}">{{ post.community.name }}</a>
+        </div>
+    {% endif %}
+
     <div class="post-card__body">
-        <p>{{ post.body|linkify_post }}</p>
-        {% if post.location %}<div class="post-card__location"><i class="bi bi-geo-alt"></i> {{ post.location }}</div>{% endif %}
+        {% if post.body %}<p>{{ post.body|linkify_post }}</p>{% endif %}
+        {% if post.location %}<div class="post-card__location"><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ post.location }}</div>{% endif %}
+
+        {% if post.poll %}
+            {% include "partials/_poll.html" with poll=post.poll %}
+        {% endif %}
+
+        {% if post.quoted_post %}
+            <a href="{% url 'posts:detail' post.quoted_post.pk %}" class="quoted-card quoted-card--inline">
+                <header class="quoted-card__header">
+                    {% if post.quoted_post.author.profile.avatar %}
+                        <img src="{{ post.quoted_post.author.profile.avatar.url }}" alt="" loading="lazy">
+                    {% else %}
+                        <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+                    {% endif %}
+                    <div>
+                        <strong>{{ post.quoted_post.author.profile.name|default:post.quoted_post.author.username }}</strong>
+                        <span class="text-muted small">@{{ post.quoted_post.author.username }} · {{ post.quoted_post.created_at|timesince }} ago</span>
+                    </div>
+                </header>
+                <p>{{ post.quoted_post.body|linkify_post|truncatewords:40 }}</p>
+                {% if post.quoted_post.image %}
+                    <img src="{{ post.quoted_post.image.url }}" alt="" class="quoted-card__media" loading="lazy">
+                {% endif %}
+            </a>
+        {% endif %}
     </div>
 
     {% if post.image or post.extra_images.all %}
         <div class="post-card__media">
+            {% with post_author=post.author.profile.name|default:post.author.username %}
             {% if post.image %}
-                <a href="{% url 'posts:detail' post.pk %}" class="post-card__media-main">
-                    <img src="{{ post.image.url }}" alt="Post image">
+                <a href="{{ post.image.url }}" class="post-card__media-main"
+                   data-lightbox-src="{{ post.image.url }}"
+                   data-lightbox-group="post-{{ post.id }}">
+                    <img src="{{ post.image.url }}"
+                         alt="{% if post.body %}{{ post.body|truncatechars:80 }}{% else %}Photo posted by {{ post_author }}{% endif %}"
+                         loading="lazy" decoding="async">
                 </a>
             {% endif %}
             {% for img in post.extra_images.all|slice:":2" %}
-                <a href="{% url 'posts:detail' post.pk %}" class="post-card__media-side">
-                    <img src="{{ img.image.url }}" alt="Extra image">
+                <a href="{{ img.image.url }}" class="post-card__media-side"
+                   data-lightbox-src="{{ img.image.url }}"
+                   data-lightbox-group="post-{{ post.id }}">
+                    <img src="{{ img.image.url }}"
+                         alt="Additional photo by {{ post_author }} ({{ forloop.counter|add:1 }})"
+                         loading="lazy" decoding="async">
                 </a>
             {% endfor %}
+            {% endwith %}
         </div>
     {% endif %}
 
     <footer class="post-card__footer">
-        <button type="button"
-                class="post-card__action js-like-btn {% if post.is_liked %}post-card__action--active{% endif %}"
-                data-url="{% url 'posts:toggle_like' post.pk %}"
-                data-post-id="{{ post.id }}">
-            <i class="bi {% if post.is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
-            <span class="js-like-label">{% if post.is_liked %}Liked{% else %}Like{% endif %}</span>
-            <span class="js-like-count">{{ post.like_count|default_if_none:post.likes_count }}</span>
-        </button>
+        {% with my_reaction=post|reaction_of:user %}
+        <div class="reaction-wrap">
+            <button type="button"
+                    class="post-card__action js-like-btn {% if post.is_liked or my_reaction %}post-card__action--active{% endif %}"
+                    data-url="{% url 'posts:toggle_like' post.pk %}"
+                    data-post-id="{{ post.id }}"
+                    data-emoji="{{ my_reaction|default:'' }}"
+                    aria-haspopup="true" aria-label="React to post">
+                <span class="js-like-emoji" aria-hidden="true">
+                    {% if my_reaction == 'laugh' %}😂
+                    {% elif my_reaction == 'fire' %}🔥
+                    {% elif my_reaction == 'sad' %}😢
+                    {% elif my_reaction == 'wow' %}😮
+                    {% elif my_reaction == 'clap' %}👏
+                    {% elif my_reaction == 'heart' %}❤️
+                    {% else %}<i class="bi bi-heart"></i>{% endif %}
+                </span>
+                <span class="js-like-label">
+                    {% if my_reaction %}Reacted{% else %}React{% endif %}
+                </span>
+                <span class="js-like-count">{{ post.like_count|default_if_none:post.likes_count }}</span>
+            </button>
+            <div class="reaction-picker js-reaction-picker" hidden role="menu" aria-label="Pick a reaction">
+                <button type="button" class="reaction-picker__item js-reaction-pick" data-emoji="heart" role="menuitem" aria-label="Heart">❤️</button>
+                <button type="button" class="reaction-picker__item js-reaction-pick" data-emoji="laugh" role="menuitem" aria-label="Laugh">😂</button>
+                <button type="button" class="reaction-picker__item js-reaction-pick" data-emoji="fire"  role="menuitem" aria-label="Fire">🔥</button>
+                <button type="button" class="reaction-picker__item js-reaction-pick" data-emoji="wow"   role="menuitem" aria-label="Wow">😮</button>
+                <button type="button" class="reaction-picker__item js-reaction-pick" data-emoji="sad"   role="menuitem" aria-label="Sad">😢</button>
+                <button type="button" class="reaction-picker__item js-reaction-pick" data-emoji="clap"  role="menuitem" aria-label="Clap">👏</button>
+            </div>
+        </div>
+        {% endwith %}
 
         <a href="{% url 'posts:detail' post.pk %}#comments" class="post-card__action">
             <i class="bi bi-chat"></i> Comment
             <span>{{ post.comment_count|default_if_none:post.comments_count }}</span>
         </a>
+
+        {% if user.is_authenticated and user != post.author %}
+            <a href="{% url 'posts:repost' post.pk %}" class="post-card__action" data-bs-toggle="tooltip" title="Quote or repost">
+                <i class="bi bi-repeat"></i> <span>Repost</span>
+            </a>
+        {% endif %}
+
+        <button type="button" class="post-card__action js-share-btn"
+                data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'posts:detail' post.pk %}"
+                data-title="{{ post.author.profile.name|default:post.author.username }} on SocialHub"
+                data-text="{{ post.body|truncatechars:120 }}"
+                data-bs-toggle="tooltip" title="Share or copy link">
+            <i class="bi bi-share"></i> <span>Share</span>
+        </button>
 
         {% if user.is_authenticated %}
             <button type="button"

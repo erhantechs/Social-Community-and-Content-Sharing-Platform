@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Two-factor authentication · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'accounts:settings' %}" class="back-link">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to settings
+</a>
+
+<div class="card-block">
+    <div class="card-block__header"><h2>Two-factor authentication</h2></div>
+
+    {% if enabled %}
+        <p class="d-flex align-items-center gap-2">
+            <span class="badge bg-success">Enabled</span>
+            Your account is protected with an authenticator app.
+        </p>
+        <p class="text-muted">
+            Backup codes remaining: <strong>{{ remaining_backup_codes }}</strong>
+        </p>
+
+        <div class="d-flex gap-2 flex-wrap mt-3">
+            <a href="{% url 'accounts:two_factor_regenerate' %}" class="btn btn-outline-dark">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Regenerate backup codes
+            </a>
+            <a href="{% url 'accounts:two_factor_disable' %}" class="btn btn-outline-danger">
+                <i class="bi bi-shield-slash" aria-hidden="true"></i> Disable 2FA
+            </a>
+        </div>
+    {% else %}
+        <p>
+            Add a second layer of security to your account by requiring a code
+            from an authenticator app (Google Authenticator, 1Password, Authy, etc.)
+            every time you sign in.
+        </p>
+        <a href="{% url 'accounts:two_factor_setup' %}" class="btn btn-dark mt-3">
+            <i class="bi bi-shield-lock" aria-hidden="true"></i> Set up 2FA
+        </a>
+    {% endif %}
+</div>
+{% endblock %}

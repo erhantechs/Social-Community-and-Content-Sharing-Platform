@@ -2,34 +2,96 @@
 {% block title %}Messages · SocialHub{% endblock %}
 {% block content %}
 <div class="feed-header">
-    <h1 class="feed-title">Messages</h1>
+    <h1 class="feed-title">
+        Messages
+        {% if total_unread %}
+            <span class="badge bg-danger ms-2" title="{{ total_unread }} unread">{{ total_unread }}</span>
+        {% endif %}
+    </h1>
+    <div class="d-flex gap-2">
+        <a href="{% url 'accounts:search_users' %}" class="btn btn-outline-secondary"
+           title="Find someone to message">
+            <i class="bi bi-pencil-square" aria-hidden="true"></i> New message
+        </a>
+        <a href="{% url 'messaging:group_create' %}" class="btn btn-dark">
+            <i class="bi bi-people-fill" aria-hidden="true"></i> New group
+        </a>
+    </div>
 </div>
 
-<ul class="user-list">
+<form method="get" class="search-form mb-3" role="search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <label for="inbox-search" class="visually-hidden">Search conversations</label>
+    <input id="inbox-search" type="search" name="q"
+           placeholder="Search conversations…"
+           value="{{ query|default:'' }}"
+           aria-label="Search conversations">
+    {% if query %}
+        <a href="{% url 'messaging:inbox' %}" class="btn btn-link btn-sm text-muted">Clear</a>
+    {% endif %}
+</form>
+
+<ul class="user-list inbox-list">
     {% for row in rows %}
-        <li class="user-list__row">
+        <li class="user-list__row inbox-row {% if row.unread %}inbox-row--unread{% endif %}">
             <a href="{% url 'messaging:thread' row.conv.pk %}" class="user-list__user">
-                {% if row.partner.profile.avatar %}
-                    <img src="{{ row.partner.profile.avatar.url }}" alt="{{ row.partner.username }}">
+                {% if row.is_group %}
+                    {% if row.conv.cover %}
+                        <img src="{{ row.conv.cover.url }}" alt="{{ row.name }} group cover" class="conv-avatar conv-avatar--group" loading="lazy" decoding="async">
+                    {% else %}
+                        <div class="conv-avatar conv-avatar--group">
+                            <i class="bi bi-people-fill" aria-hidden="true"></i>
+                        </div>
+                    {% endif %}
                 {% else %}
-                    <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+                    {% if row.partner.profile.avatar %}
+                        <img src="{{ row.partner.profile.avatar.url }}" alt="{{ row.partner.profile.name|default:row.partner.username }}'s avatar" class="conv-avatar" loading="lazy" decoding="async">
+                    {% else %}
+                        <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill" aria-hidden="true"></i></div>
+                    {% endif %}
                 {% endif %}
-                <div>
-                    <strong>{{ row.partner.profile.name|default:row.partner.username }}</strong>
-                    <div class="text-muted small">
-                        {% if row.last %}{{ row.last.body|truncatechars:50 }} · {{ row.last.created_at|timesince }} ago
-                        {% else %}No messages yet{% endif %}
+                <div class="inbox-row__body">
+                    <div class="inbox-row__title">
+                        <strong>{{ row.name }}</strong>
+                        {% if row.is_group %}
+                            <span class="badge bg-light text-dark inbox-row__group-badge" title="Group">
+                                <i class="bi bi-people-fill" aria-hidden="true"></i>
+                                {{ row.conv.participants.count }}
+                            </span>
+                        {% endif %}
+                        {% if row.last %}
+                            <span class="inbox-row__time" title="{{ row.last.created_at|date:'M j, Y · H:i' }}">
+                                {{ row.last.created_at|timesince }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="inbox-row__preview text-muted small">
+                        {% if row.last %}
+                            {% if row.is_group %}<span class="fw-semibold">{{ row.last.sender.username }}:</span> {% endif %}{{ row.last.body|truncatechars:80 }}
+                        {% else %}
+                            <em>No messages yet</em>
+                        {% endif %}
                     </div>
                 </div>
             </a>
-            {% if row.unread %}<span class="side-nav__badge">{{ row.unread }}</span>{% endif %}
+            {% if row.unread %}<span class="inbox-row__badge" aria-label="{{ row.unread }} unread messages">{{ row.unread }}</span>{% endif %}
         </li>
     {% empty %}
-        <div class="empty-state">
-            <i class="bi bi-chat-dots"></i>
-            <h2>No conversations yet</h2>
-            <p>Visit a user's profile and click "Message" to start chatting.</p>
-        </div>
+        {% if query %}
+            <div class="empty-state">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <h2>No matches for "{{ query }}"</h2>
+                <p>Try a different search or <a href="{% url 'messaging:inbox' %}">clear the filter</a>.</p>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-chat-dots" aria-hidden="true"></i>
+                <h2>No conversations yet</h2>
+                <p>Visit someone's profile and click <strong>Message</strong>, or
+                    <a href="{% url 'messaging:group_create' %}">start a group chat</a>.</p>
+                <a href="{% url 'accounts:search_users' %}" class="btn btn-dark">Find people to message</a>
+            </div>
+        {% endif %}
     {% endfor %}
 </ul>
 {% endblock %}

@@ -8,3 +8,9 @@ dj-database-url>=2.1
 psycopg2-binary>=2.9; platform_python_implementation == "CPython"
 drf-spectacular>=0.27
 sentry-sdk>=1.40
+channels>=4.0
+daphne>=4.0
+channels-redis>=4.2
+pyotp>=2.9
+qrcode[pil]>=7.4
+requests>=2.31

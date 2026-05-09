@@ -5,8 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#9b8cf0">
-    <meta name="description" content="SocialHub — a modern social community and content sharing platform.">
+    <meta name="description" content="{% block meta_description %}SocialHub — a modern social community and content sharing platform.{% endblock %}">
     <title>{% block title %}SocialHub{% endblock %}</title>
+
+    {# Open Graph (Facebook, LinkedIn, Slack, Discord etc.) #}
+    <meta property="og:site_name" content="SocialHub">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{{ self.title|default:'SocialHub' }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ self.meta_description|default:'A modern social community and content sharing platform.' }}{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% load static %}{% static 'images/logo.svg' %}{% endblock %}">
+
+    {# Twitter Card (X) #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ self.title|default:'SocialHub' }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ self.meta_description|default:'A modern social community and content sharing platform.' }}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.svg' %}{% endblock %}">
 
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32.png' %}?v=2">
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16.png' %}?v=2">
@@ -18,7 +32,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
 
-    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=15">
     {% block extra_head %}{% endblock %}
 
     {# Apply saved theme synchronously to avoid a light-mode flash. #}
@@ -35,6 +49,8 @@
     </script>
 </head>
 <body class="{% block body_class %}app-shell{% endblock %}">
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
 {% block layout %}
 <div class="app-bg">
@@ -70,38 +86,65 @@
                 </div>
             </div>
 
+            {% with rm=request.resolver_match %}
+            {% with ns=rm.namespace un=rm.url_name %}
             <nav class="side-nav" aria-label="Primary">
-                <a href="{% url 'posts:feed' %}" class="side-nav__item {% if request.resolver_match.url_name == 'feed' %}side-nav__item--active{% endif %}">
-                    <i class="bi bi-house-door"></i> News Feed
+                <a href="{% url 'posts:feed' %}" class="side-nav__item {% if un == 'feed' %}side-nav__item--active{% endif %}"
+                   {% if un == 'feed' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-house-door" aria-hidden="true"></i> News Feed
                 </a>
-                <a href="{% if user.is_authenticated %}{% url 'messaging:inbox' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
-                    <i class="bi bi-chat-dots"></i> Messages
+                <a href="{% if user.is_authenticated %}{% url 'messaging:inbox' %}{% else %}{% url 'accounts:login' %}{% endif %}"
+                   class="side-nav__item {% if ns == 'messaging' %}side-nav__item--active{% endif %}"
+                   {% if ns == 'messaging' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-chat-dots" aria-hidden="true"></i> Messages
                     {% if unread_message_count %}
                         <span class="side-nav__badge">{{ unread_message_count }}</span>
                     {% endif %}
                 </a>
-                <a href="{% if user.is_authenticated %}{% url 'notifications:list' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
-                    <i class="bi bi-bell"></i> Notifications
+                <a href="{% if user.is_authenticated %}{% url 'notifications:list' %}{% else %}{% url 'accounts:login' %}{% endif %}"
+                   class="side-nav__item {% if ns == 'notifications' %}side-nav__item--active{% endif %}"
+                   {% if ns == 'notifications' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-bell" aria-hidden="true"></i> Notifications
                     {% if unread_notification_count %}
                         <span class="side-nav__badge">{{ unread_notification_count }}</span>
                     {% endif %}
                 </a>
-                <a href="{% url 'posts:explore' %}" class="side-nav__item {% if request.resolver_match.url_name == 'explore' %}side-nav__item--active{% endif %}">
-                    <i class="bi bi-globe"></i> Forums
+                <a href="{% url 'communities:list' %}" class="side-nav__item {% if ns == 'communities' %}side-nav__item--active{% endif %}"
+                   {% if ns == 'communities' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-collection" aria-hidden="true"></i> Communities
                 </a>
-                <a href="{% if user.is_authenticated %}{% url 'accounts:following' user.username %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
-                    <i class="bi bi-people"></i> Friends
+                <a href="{% url 'posts:explore' %}" class="side-nav__item {% if un == 'explore' or un == 'search' %}side-nav__item--active{% endif %}"
+                   {% if un == 'explore' or un == 'search' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-globe" aria-hidden="true"></i> Explore
+                </a>
+                <a href="{% if user.is_authenticated %}{% url 'accounts:following' user.username %}{% else %}{% url 'accounts:login' %}{% endif %}"
+                   class="side-nav__item {% if un == 'following' or un == 'followers' or un == 'search_users' %}side-nav__item--active{% endif %}"
+                   {% if un == 'following' or un == 'followers' or un == 'search_users' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-people" aria-hidden="true"></i> Friends
                     {% if user.is_authenticated and user.following.count %}
                         <span class="side-nav__badge">{{ user.following.count }}</span>
                     {% endif %}
                 </a>
-                <a href="{% if user.is_authenticated %}{% url 'posts:saved' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item {% if request.resolver_match.url_name == 'saved' %}side-nav__item--active{% endif %}">
-                    <i class="bi bi-bookmark"></i> Saved
+                <a href="{% if user.is_authenticated %}{% url 'posts:saved' %}{% else %}{% url 'accounts:login' %}{% endif %}"
+                   class="side-nav__item {% if un == 'saved' %}side-nav__item--active{% endif %}"
+                   {% if un == 'saved' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-bookmark" aria-hidden="true"></i> Saved
                 </a>
-                <a href="{% if user.is_authenticated %}{% url 'accounts:edit_profile' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="side-nav__item">
-                    <i class="bi bi-gear"></i> Settings
+                {% if user.is_authenticated %}
+                <a href="{% url 'posts:draft_list' %}"
+                   class="side-nav__item {% if un == 'draft_list' %}side-nav__item--active{% endif %}"
+                   {% if un == 'draft_list' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Drafts
+                </a>
+                {% endif %}
+                <a href="{% if user.is_authenticated %}{% url 'accounts:settings' %}{% else %}{% url 'accounts:login' %}{% endif %}"
+                   class="side-nav__item {% if un == 'settings' or un == 'edit_profile' or un == 'muted_list' or un == 'blocked_list' %}side-nav__item--active{% endif %}"
+                   {% if un == 'settings' or un == 'edit_profile' or un == 'muted_list' or un == 'blocked_list' %}aria-current="page"{% endif %}>
+                    <i class="bi bi-gear" aria-hidden="true"></i> Settings
                 </a>
             </nav>
+            {% endwith %}
+            {% endwith %}
 
             <div class="download-card">
                 <div class="download-card__avatars">
@@ -129,14 +172,15 @@
         </aside>
 
         {# ------- MAIN CONTENT ------- #}
-        <main class="main-col">
+        <main class="main-col" id="main-content" tabindex="-1">
             <div class="topbar">
                 <a href="{% url 'posts:feed' %}" class="topbar__brand" aria-label="SocialHub">
                     <img src="{% static 'images/logo-icon.svg' %}" alt="" width="28" height="28">
                 </a>
-                <form action="{% url 'posts:search' %}" method="get" class="search-form">
-                    <i class="bi bi-search"></i>
-                    <input type="search" name="q" placeholder="Search posts, users, interests…" value="{{ request.GET.q|default:'' }}">
+                <form action="{% url 'posts:search' %}" method="get" class="search-form" role="search">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <label for="topbar-search" class="visually-hidden">Search posts, users, interests</label>
+                    <input id="topbar-search" type="search" name="q" placeholder="Search posts, users, interests…" value="{{ request.GET.q|default:'' }}" aria-label="Search posts, users, interests">
                 </form>
 
                 {% if user.is_authenticated %}
@@ -160,7 +204,7 @@
                                 <strong>Notifications</strong>
                                 <button type="button" class="btn-link-tiny js-notif-mark-read">Mark all read</button>
                             </div>
-                            <ul class="notif-dropdown__list js-notif-list">
+                            <ul class="notif-dropdown__list js-notif-list" aria-live="polite" aria-atomic="false">
                                 <li class="empty-tiny text-center py-3">Loading…</li>
                             </ul>
                             <a href="{% url 'notifications:list' %}" class="notif-dropdown__see-all">See all</a>
@@ -174,11 +218,25 @@
             </div>
 
             {% if messages %}
-                <div class="messages-area">
+                {# Toast container — fixed bottom-right, slides in, auto-dismisses. #}
+                <div class="toast-container position-fixed bottom-0 end-0 p-3" aria-live="polite" aria-atomic="true">
                     {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <div class="toast toast--{{ message.tags|default:'info' }} align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4500">
+                            <div class="d-flex">
+                                <div class="toast-body d-flex align-items-center gap-2">
+                                    {% if message.tags == 'success' %}
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    {% elif message.tags == 'danger' %}
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                    {% elif message.tags == 'warning' %}
+                                        <i class="bi bi-exclamation-circle-fill"></i>
+                                    {% else %}
+                                        <i class="bi bi-info-circle-fill"></i>
+                                    {% endif %}
+                                    <span>{{ message }}</span>
+                                </div>
+                                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
                         </div>
                     {% endfor %}
                 </div>
@@ -196,34 +254,131 @@
 
     </div>
 </div>
+
+{# Site footer — small, sits under the rounded app frame. #}
+<footer class="site-footer">
+    <div class="site-footer__inner">
+        <div class="site-footer__left">
+            {% load static %}
+            <img src="{% static 'images/logo-icon.svg' %}" alt="" width="20" height="20">
+            <span>SocialHub © {% now "Y" %}</span>
+        </div>
+        <nav class="site-footer__links" aria-label="Footer">
+            <a href="{% url 'posts:explore' %}">Explore</a>
+            <a href="#" data-bs-toggle="tooltip" title="Coming soon">About</a>
+            <a href="#" data-bs-toggle="tooltip" title="Coming soon">Help</a>
+            <a href="#" data-bs-toggle="tooltip" title="Coming soon">Privacy</a>
+            <a href="#" data-bs-toggle="tooltip" title="Coming soon">Terms</a>
+            <a href="https://github.com/erhantechs/Social-Community-and-Content-Sharing-Platform"
+               target="_blank" rel="noopener" aria-label="GitHub repository">
+                <i class="bi bi-github"></i>
+            </a>
+        </nav>
+    </div>
+</footer>
 {% endblock %}
+
+{# Floating compose button — visible on mobile, scrolls with the user. #}
+{% if user.is_authenticated %}
+<a href="{% url 'posts:create' %}" class="fab-compose" aria-label="Create new post"
+   data-bs-toggle="tooltip" title="New post">
+    <i class="bi bi-plus-lg"></i>
+</a>
+{% endif %}
 
 {# Mobile bottom navigation — only visible on small screens (CSS-driven). #}
 {% if user.is_authenticated %}
+{% with rm=request.resolver_match %}
+{% with ns=rm.namespace un=rm.url_name %}
 <nav class="bottom-nav" aria-label="Bottom navigation">
-    <a href="{% url 'posts:feed' %}" class="bottom-nav__item {% if request.resolver_match.url_name == 'feed' %}bottom-nav__item--active{% endif %}">
-        <i class="bi bi-house-door"></i><span>Home</span>
+    <a href="{% url 'posts:feed' %}" class="bottom-nav__item {% if un == 'feed' %}bottom-nav__item--active{% endif %}"
+       {% if un == 'feed' %}aria-current="page"{% endif %}>
+        <i class="bi bi-house-door" aria-hidden="true"></i><span>Home</span>
     </a>
-    <a href="{% url 'posts:explore' %}" class="bottom-nav__item {% if request.resolver_match.url_name == 'explore' %}bottom-nav__item--active{% endif %}">
-        <i class="bi bi-compass"></i><span>Explore</span>
+    <a href="{% url 'posts:explore' %}" class="bottom-nav__item {% if un == 'explore' or un == 'search' %}bottom-nav__item--active{% endif %}"
+       {% if un == 'explore' or un == 'search' %}aria-current="page"{% endif %}>
+        <i class="bi bi-compass" aria-hidden="true"></i><span>Explore</span>
     </a>
-    <a href="{% url 'posts:create' %}" class="bottom-nav__item bottom-nav__item--cta">
-        <span class="bottom-nav__plus"><i class="bi bi-plus-lg"></i></span>
+    <a href="{% url 'posts:create' %}" class="bottom-nav__item bottom-nav__item--cta" aria-label="Create new post">
+        <span class="bottom-nav__plus"><i class="bi bi-plus-lg" aria-hidden="true"></i></span>
     </a>
-    <a href="{% url 'messaging:inbox' %}" class="bottom-nav__item">
-        <i class="bi bi-chat-dots"></i><span>Messages</span>
+    <a href="{% url 'messaging:inbox' %}" class="bottom-nav__item {% if ns == 'messaging' %}bottom-nav__item--active{% endif %}"
+       {% if ns == 'messaging' %}aria-current="page"{% endif %}>
+        <i class="bi bi-chat-dots" aria-hidden="true"></i><span>Messages</span>
         {% if unread_message_count %}<span class="bottom-nav__badge">{{ unread_message_count }}</span>{% endif %}
     </a>
-    <a href="{% url 'accounts:profile' user.username %}" class="bottom-nav__item">
+    <a href="{% url 'accounts:profile' user.username %}"
+       class="bottom-nav__item {% if un == 'profile' and rm.kwargs.username == user.username %}bottom-nav__item--active{% endif %}"
+       {% if un == 'profile' and rm.kwargs.username == user.username %}aria-current="page"{% endif %}>
         {% if user.profile.avatar %}
             <img src="{{ user.profile.avatar.url }}" alt="" class="bottom-nav__avatar">
         {% else %}
-            <i class="bi bi-person"></i>
+            <i class="bi bi-person" aria-hidden="true"></i>
         {% endif %}
         <span>Profile</span>
     </a>
 </nav>
+{% endwith %}
+{% endwith %}
 {% endif %}
+
+{% if user.is_authenticated and not user.profile.onboarded %}
+{# Onboarding modal — shown once after the very first login. #}
+<div class="modal fade" id="onboardingModal" tabindex="-1" aria-hidden="true" aria-labelledby="onboardingTitle" data-bs-backdrop="static"
+     data-dismiss-url="{% url 'accounts:dismiss_onboarding' %}">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content onboarding">
+            <div class="onboarding__step js-onb-step" data-step="1">
+                <div class="onboarding__art onboarding__art--1">
+                    {% load static %}
+                    <img src="{% static 'images/logo-icon.svg' %}" alt="" width="72" height="72">
+                </div>
+                <h2 id="onboardingTitle">Welcome to SocialHub, {{ user.first_name|default:user.username }}!</h2>
+                <p class="text-muted">Let's get you set up in 3 quick steps.</p>
+            </div>
+            <div class="onboarding__step js-onb-step" data-step="2" hidden>
+                <div class="onboarding__art onboarding__art--2"><i class="bi bi-people-fill"></i></div>
+                <h2>Find your people</h2>
+                <p class="text-muted">Follow accounts whose posts you'd like to see — we've prepared suggestions on the right of every page.</p>
+                <a href="{% url 'accounts:search_users' %}" class="btn btn-outline-dark btn-sm">Discover users →</a>
+            </div>
+            <div class="onboarding__step js-onb-step" data-step="3" hidden>
+                <div class="onboarding__art onboarding__art--3"><i class="bi bi-megaphone-fill"></i></div>
+                <h2>Share your first post</h2>
+                <p class="text-muted">Use the composer at the bottom of the feed, or the new-post button up top. Mention people with <code>@</code>, tag topics with <code>#</code>.</p>
+            </div>
+
+            <div class="onboarding__footer">
+                <div class="onboarding__dots">
+                    <span class="onboarding__dot js-onb-dot" data-step="1"></span>
+                    <span class="onboarding__dot js-onb-dot" data-step="2"></span>
+                    <span class="onboarding__dot js-onb-dot" data-step="3"></span>
+                </div>
+                <div class="onboarding__actions">
+                    <button type="button" class="btn btn-link btn-sm js-onb-skip">Skip</button>
+                    <button type="button" class="btn btn-dark js-onb-next">Next <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="lightbox js-lightbox" hidden role="dialog" aria-modal="true" aria-label="Image viewer">
+    <button type="button" class="lightbox__close js-lightbox-close" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+    </button>
+    <button type="button" class="lightbox__nav lightbox__nav--prev js-lightbox-prev" aria-label="Previous image">
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <button type="button" class="lightbox__nav lightbox__nav--next js-lightbox-next" aria-label="Next image">
+        <i class="bi bi-chevron-right"></i>
+    </button>
+    <div class="lightbox__stage js-lightbox-stage">
+        <img class="lightbox__img js-lightbox-img" alt="">
+    </div>
+    <div class="lightbox__counter js-lightbox-counter"></div>
+</div>
 
 <!-- Story modal — populated from data-attrs on story cards. -->
 <div class="modal fade" id="storyModal" tabindex="-1" aria-hidden="true">
@@ -231,6 +386,12 @@
         <div class="modal-content story-modal__content">
             <button type="button" class="story-modal__close" data-bs-dismiss="modal" aria-label="Close">
                 <i class="bi bi-x-lg"></i>
+            </button>
+            <button type="button" class="story-modal__nav story-modal__nav--prev js-story-prev" aria-label="Previous story">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button type="button" class="story-modal__nav story-modal__nav--next js-story-next" aria-label="Next story">
+                <i class="bi bi-chevron-right"></i>
             </button>
             <div class="story-modal__progress">
                 <div class="story-modal__progress-bar"></div>
@@ -249,7 +410,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{% static 'js/main.js' %}?v=3"></script>
+<script src="{% static 'js/main.js' %}?v=13"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

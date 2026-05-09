@@ -40,12 +40,26 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Password</label>
-                    {{ form.password1 }}
+                    <div class="password-wrap">
+                        {{ form.password1 }}
+                        <button type="button" class="password-toggle js-password-toggle" aria-label="Show password" aria-pressed="false">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="password-strength js-password-strength" data-target="id_password1" hidden>
+                        <div class="password-strength__bar"><div class="password-strength__fill"></div></div>
+                        <div class="password-strength__label small text-muted"></div>
+                    </div>
                     {% for err in form.password1.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Confirm password</label>
-                    {{ form.password2 }}
+                    <div class="password-wrap">
+                        {{ form.password2 }}
+                        <button type="button" class="password-toggle js-password-toggle" aria-label="Show password" aria-pressed="false">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     {% for err in form.password2.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
                 </div>
             </div>

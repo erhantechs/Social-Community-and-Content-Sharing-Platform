@@ -1,5 +1,6 @@
 """DRF API views — posts CRUD, comment CRUD, like toggle, follow toggle."""
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import permissions, status, viewsets
@@ -8,7 +9,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import Follow
+from accounts.models import Block, Follow
 from posts.models import Comment, Like, Post
 from posts.views import annotate_posts
 
@@ -32,6 +33,15 @@ class LikeToggleResponseSerializer(drf_serializers.Serializer):
     likes_count = drf_serializers.IntegerField()
 
 
+def _visibility_filter(user, following_ids):
+    """Build the Q for which posts an authenticated user is allowed to see."""
+    return (
+        Q(visibility=Post.PUBLIC)
+        | Q(author=user)
+        | (Q(visibility=Post.FRIENDS) & Q(author__in=following_ids))
+    )
+
+
 class PostViewSet(viewsets.ModelViewSet):
     """`/api/posts/` — list public posts, create your own, edit/delete yours."""
 
@@ -46,10 +56,11 @@ class PostViewSet(viewsets.ModelViewSet):
             following_ids = Follow.objects.filter(follower=user).values_list(
                 "following_id", flat=True
             )
-            qs = qs.filter(
-                # public OR friends-only-of-followed OR your own
-                models_q_filter(user, following_ids)
-            )
+            qs = qs.filter(_visibility_filter(user, following_ids))
+            # Hide posts from anyone the current user has blocked (or vice versa).
+            hidden_ids = Block.hidden_user_ids_for(user)
+            if hidden_ids:
+                qs = qs.exclude(author_id__in=hidden_ids)
         else:
             qs = qs.filter(visibility=Post.PUBLIC)
 
@@ -88,16 +99,6 @@ class PostViewSet(viewsets.ModelViewSet):
         ser.is_valid(raise_exception=True)
         ser.save(author=request.user, post=post)
         return Response(ser.data, status=status.HTTP_201_CREATED)
-
-
-def models_q_filter(user, following_ids):
-    """Build the visibility Q for the authenticated post list."""
-    from django.db.models import Q
-    return (
-        Q(visibility=Post.PUBLIC)
-        | Q(author=user)
-        | (Q(visibility=Post.FRIENDS) & Q(author__in=following_ids))
-    )
 
 
 class CommentViewSet(viewsets.ModelViewSet):

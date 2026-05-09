@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · {{ community.name }} · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'communities:event_list' community.slug %}" class="back-link">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to events
+</a>
+
+<div class="card-block">
+    <div class="card-block__header">
+        <h2>{{ title }}</h2>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.title.id_for_label }}">Title</label>
+            {{ form.title }}
+            {% for err in form.title.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+            {% for err in form.description.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.starts_at.id_for_label }}">Starts</label>
+                {{ form.starts_at }}
+                {% for err in form.starts_at.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.ends_at.id_for_label }}">Ends (optional)</label>
+                {{ form.ends_at }}
+                {% for err in form.ends_at.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
+                {{ form.location }}
+                {% for err in form.location.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.cover.id_for_label }}">Cover image (optional)</label>
+                {{ form.cover }}
+                {% for err in form.cover.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-dark">{{ title }}</button>
+            <a href="{% url 'communities:event_list' community.slug %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

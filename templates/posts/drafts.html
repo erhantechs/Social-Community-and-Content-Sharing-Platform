@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Drafts · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Drafts</h1>
+    <a href="{% url 'posts:create' %}" class="btn btn-dark">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> New post
+    </a>
+</div>
+
+{% if drafts %}
+    <ul class="draft-list">
+        {% for d in drafts %}
+            <li class="draft-list__item">
+                <div class="draft-list__body">
+                    {% if d.body %}
+                        <p class="draft-list__text">{{ d.body|truncatechars:200 }}</p>
+                    {% else %}
+                        <p class="draft-list__text text-muted"><em>(empty draft)</em></p>
+                    {% endif %}
+                    <div class="draft-list__meta text-muted small">
+                        <i class="bi bi-clock" aria-hidden="true"></i>
+                        Last edited {{ d.updated_at|timesince }} ago
+                        {% if d.community %}
+                            · <i class="bi bi-collection" aria-hidden="true"></i> {{ d.community.name }}
+                        {% endif %}
+                        · {{ d.get_visibility_display }}
+                    </div>
+                </div>
+                <div class="draft-list__actions">
+                    <a href="{% url 'posts:create' %}?draft={{ d.pk }}" class="btn btn-sm btn-dark">
+                        <i class="bi bi-pencil-square" aria-hidden="true"></i> Continue
+                    </a>
+                    <form method="post" action="{% url 'posts:draft_delete' d.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                onclick="return confirm('Delete this draft?');">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <div class="empty-state">
+        <i class="bi bi-pencil-square"></i>
+        <h2>No drafts yet</h2>
+        <p>Start a post and click <strong>Save as draft</strong> to keep it for later.</p>
+        <a href="{% url 'posts:create' %}" class="btn btn-dark">Start writing</a>
+    </div>
+{% endif %}
+{% endblock %}

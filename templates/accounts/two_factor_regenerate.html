@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Regenerate backup codes · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'accounts:two_factor_status' %}" class="back-link">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back
+</a>
+
+<div class="card-block">
+    <div class="card-block__header"><h2>Regenerate backup codes</h2></div>
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        Generating new backup codes will invalidate any unused codes from
+        your previous batch.
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-dark">Generate new backup codes</button>
+        <a href="{% url 'accounts:two_factor_status' %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

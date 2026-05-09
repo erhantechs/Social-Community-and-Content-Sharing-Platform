@@ -1,19 +1,21 @@
-{% load post_extras %}
+{% load post_extras avatar_tags %}
 {# Single comment row + nested replies. Expects: comment, post (from outer scope). #}
 <li class="comment-list__item {% if comment.is_reply %}comment-list__item--reply{% endif %}" id="comment-{{ comment.pk }}">
     <a href="{% url 'accounts:profile' comment.author.username %}" class="comment-list__avatar">
-        {% if comment.author.profile.avatar %}
-            <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}">
-        {% else %}
-            <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
-        {% endif %}
+        {% avatar comment.author size="sm" %}
     </a>
     <div class="comment-list__bubble">
         <div class="comment-list__head">
             <a href="{% url 'accounts:profile' comment.author.username %}">
                 <strong>{{ comment.author.profile.name|default:comment.author.username }}</strong>
             </a>
-            <span class="text-muted small">· {{ comment.created_at|timesince }} ago</span>
+            <span class="text-muted small">· {{ comment.created_at|timesince }} ago{% if comment.edited %} · <em>edited</em>{% endif %}</span>
+            {% if user == comment.author %}
+                <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-muted js-comment-edit-btn"
+                        data-target="comment-edit-{{ comment.pk }}" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            {% endif %}
             {% if user == comment.author or user == post.author %}
                 <form method="post" action="{% url 'posts:comment_delete' comment.pk %}" class="d-inline">
                     {% csrf_token %}
@@ -24,7 +26,21 @@
                 </form>
             {% endif %}
         </div>
-        <p>{{ comment.body|linkify_post }}</p>
+        <p class="js-comment-body">{{ comment.body|linkify_post }}</p>
+
+        {% if user == comment.author %}
+            <form method="post" action="{% url 'posts:comment_edit' comment.pk %}"
+                  class="comment-edit-form js-comment-edit-form" id="comment-edit-{{ comment.pk }}" hidden>
+                {% csrf_token %}
+                <input type="text" name="body" value="{{ comment.body }}" maxlength="1000"
+                       class="form-control form-control-sm" required>
+                <div class="d-flex gap-2 mt-1">
+                    <button class="btn btn-sm btn-dark" type="submit">Save</button>
+                    <button class="btn btn-sm btn-link text-muted js-comment-edit-cancel"
+                            type="button" data-target="comment-edit-{{ comment.pk }}">Cancel</button>
+                </div>
+            </form>
+        {% endif %}
 
         <div class="comment-list__actions">
             {% if user.is_authenticated %}
@@ -51,7 +67,8 @@
                 {% csrf_token %}
                 <input type="hidden" name="parent_id" value="{{ comment.pk }}">
                 <input type="text" name="body" class="form-control"
-                       placeholder="Reply to {{ comment.author.username }}…" required maxlength="1000">
+                       placeholder="Reply to {{ comment.author.username }}…" required maxlength="1000"
+                       autocomplete="off" data-mention="1">
                 <button class="btn btn-sm btn-dark mt-2" type="submit">Reply</button>
             </form>
         {% endif %}

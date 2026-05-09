@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Disable 2FA · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'accounts:two_factor_status' %}" class="back-link">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back
+</a>
+
+<div class="card-block">
+    <div class="card-block__header"><h2>Disable two-factor authentication</h2></div>
+
+    <p>
+        Disabling 2FA will remove the requirement to enter a code at sign-in
+        and invalidate your backup codes.
+    </p>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="tfa-disable-code" class="form-label">
+                Confirm with your current code or a backup code
+            </label>
+            <input id="tfa-disable-code" name="code" type="text"
+                   inputmode="numeric" pattern="[0-9A-Z]{6,12}" maxlength="12"
+                   autocomplete="one-time-code" required autofocus
+                   class="form-control tfa-input" placeholder="123456">
+        </div>
+        <button type="submit" class="btn btn-danger">Disable 2FA</button>
+        <a href="{% url 'accounts:two_factor_status' %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

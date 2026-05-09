@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load post_extras %}
+
+{% block title %}Repost · SocialHub{% endblock %}
+
+{% block content %}
+<div class="card-block">
+    <h2><i class="bi bi-repeat"></i> Repost</h2>
+    <p class="text-muted small">Add your own thoughts above the original — or leave it empty to share without commentary.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.body }}
+            {% for err in form.body.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+        </div>
+
+        {# Embedded card: the post being reposted #}
+        <article class="quoted-card">
+            <header class="quoted-card__header">
+                {% if original.author.profile.avatar %}
+                    <img src="{{ original.author.profile.avatar.url }}" alt="" loading="lazy">
+                {% else %}
+                    <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+                {% endif %}
+                <div>
+                    <strong>{{ original.author.profile.name|default:original.author.username }}</strong>
+                    <span class="text-muted small">@{{ original.author.username }} · {{ original.created_at|timesince }} ago</span>
+                </div>
+            </header>
+            <p>{{ original.body|linkify_post }}</p>
+            {% if original.image %}
+                <img src="{{ original.image.url }}" alt="" class="quoted-card__media" loading="lazy">
+            {% endif %}
+        </article>
+
+        <div class="row g-3 mt-2">
+            <div class="col-md-6">
+                <label class="form-label">Visibility</label>
+                {{ form.visibility }}
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-dark"><i class="bi bi-repeat"></i> Repost</button>
+            <a href="{% url 'posts:detail' original.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{# One row of an event list. Expects `event` and `community` (or event.community). #}
+<li class="event-list__item">
+    <a href="{% url 'communities:event_detail' event.community.slug event.pk %}" class="event-list__link">
+        <div class="event-list__date" aria-hidden="true">
+            <span class="event-list__month">{{ event.starts_at|date:"M" }}</span>
+            <span class="event-list__day">{{ event.starts_at|date:"j" }}</span>
+        </div>
+        <div class="event-list__body">
+            <strong class="event-list__title">{{ event.title }}</strong>
+            <div class="event-list__meta text-muted small">
+                <i class="bi bi-clock" aria-hidden="true"></i>
+                {{ event.starts_at|date:"D, M j · H:i" }}
+                {% if event.location %}
+                    · <i class="bi bi-geo-alt" aria-hidden="true"></i> {{ event.location|truncatechars:40 }}
+                {% endif %}
+            </div>
+            {% if event.rsvp_count %}
+                <div class="event-list__rsvps text-muted small">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    {{ event.rsvp_count }} going
+                </div>
+            {% endif %}
+        </div>
+    </a>
+</li>

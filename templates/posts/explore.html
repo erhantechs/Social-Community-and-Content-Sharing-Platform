@@ -12,6 +12,8 @@
     {% endif %}
 </div>
 
+{% include "partials/_compose_cta.html" %}
+
 <div class="feed-list">
     {% for post in posts %}
         {% include "partials/_post_card.html" with post=post %}

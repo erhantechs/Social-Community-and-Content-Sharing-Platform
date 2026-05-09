@@ -1,0 +1,8 @@
+{% load avatar_tags %}
+{% if user.is_authenticated %}
+<a href="{% url 'posts:create' %}" class="compose-cta" aria-label="Create a new post">
+    {% avatar user size="sm" %}
+    <span class="compose-cta__placeholder">What's on your mind, {{ user.first_name|default:user.username }}?</span>
+    <span class="compose-cta__icon" aria-hidden="true"><i class="bi bi-pencil-square"></i></span>
+</a>
+{% endif %}

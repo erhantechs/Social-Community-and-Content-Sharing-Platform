@@ -4,11 +4,18 @@
 
 {% block content %}
 <div class="profile-hero">
-    <div class="profile-hero__cover" {% if profile.cover %}style="background-image: url('{{ profile.cover.url }}');"{% endif %}></div>
+    <div class="profile-hero__cover" {% if profile.cover %}style="background-image: url('{{ profile.cover.url }}');"{% endif %}>
+        {% if is_self %}
+            <a href="{% url 'accounts:edit_profile' %}#cover" class="profile-hero__cover-edit" aria-label="Edit cover image">
+                <i class="bi bi-camera-fill" aria-hidden="true"></i>
+                <span>Edit cover</span>
+            </a>
+        {% endif %}
+    </div>
     <div class="profile-hero__row">
         <div class="profile-hero__avatar">
             {% if profile.avatar %}
-                <img src="{{ profile.avatar.url }}" alt="{{ profile_user.username }}">
+                <img src="{{ profile.avatar.url }}" alt="{{ profile.name|default:profile_user.username }}'s profile photo">
             {% else %}
                 <div class="avatar-placeholder avatar-placeholder--xl"><i class="bi bi-person-fill"></i></div>
             {% endif %}
@@ -38,10 +45,19 @@
                     </a>
                 {% endif %}
                 <div class="dropdown">
-                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-three-dots"></i>
+                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More profile actions">
+                        <i class="bi bi-three-dots" aria-hidden="true"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <form method="post" action="{% url 'accounts:toggle_mute' profile_user.username %}">
+                                {% csrf_token %}
+                                <button class="dropdown-item" type="submit">
+                                    <i class="bi bi-volume-mute"></i>
+                                    {% if muted_by_me %}Unmute{% else %}Mute{% endif %} @{{ profile_user.username }}
+                                </button>
+                            </form>
+                        </li>
                         <li>
                             <form method="post" action="{% url 'accounts:toggle_block' profile_user.username %}">
                                 {% csrf_token %}
@@ -78,6 +94,25 @@
 </div>
 {% endif %}
 
+{# Profile tabs — Posts / Media / Likes / Reposts / Replies #}
+<nav class="profile-tabs" aria-label="Profile content">
+    <a href="?tab=posts"   class="profile-tabs__link {% if active_tab == 'posts' %}profile-tabs__link--active{% endif %}">
+        <i class="bi bi-grid"></i> Posts
+    </a>
+    <a href="?tab=media"   class="profile-tabs__link {% if active_tab == 'media' %}profile-tabs__link--active{% endif %}">
+        <i class="bi bi-image"></i> Media
+    </a>
+    <a href="?tab=likes"   class="profile-tabs__link {% if active_tab == 'likes' %}profile-tabs__link--active{% endif %}">
+        <i class="bi bi-heart"></i> Likes
+    </a>
+    <a href="?tab=reposts" class="profile-tabs__link {% if active_tab == 'reposts' %}profile-tabs__link--active{% endif %}">
+        <i class="bi bi-repeat"></i> Reposts
+    </a>
+    <a href="?tab=replies" class="profile-tabs__link {% if active_tab == 'replies' %}profile-tabs__link--active{% endif %}">
+        <i class="bi bi-chat"></i> Replies
+    </a>
+</nav>
+
 {% if is_blocked and not is_self %}
     <div class="empty-state">
         <i class="bi bi-slash-circle"></i>
@@ -86,6 +121,9 @@
     </div>
 {% else %}
     <h2 class="feed-title mt-4">Posts</h2>
+    {% if is_self %}
+        {% include "partials/_compose_cta.html" %}
+    {% endif %}
     <div class="feed-list">
         {% for post in posts %}
             {% include "partials/_post_card.html" with post=post %}

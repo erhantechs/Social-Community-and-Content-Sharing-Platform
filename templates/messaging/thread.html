@@ -1,38 +1,241 @@
 {% extends "base.html" %}
-{% block title %}{{ partner.profile.name|default:partner.username }} · Messages{% endblock %}
+{% block title %}{% if is_group %}{{ conv.display_name }}{% else %}{{ partner.profile.name|default:partner.username }}{% endif %} · Messages{% endblock %}
 {% block content %}
-<a href="{% url 'messaging:inbox' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to messages</a>
+<a href="{% url 'messaging:inbox' %}" class="back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to messages</a>
 
 <div class="thread-header">
-    <a href="{% url 'accounts:profile' partner.username %}" class="user-list__user">
-        {% if partner.profile.avatar %}
-            <img src="{{ partner.profile.avatar.url }}" alt="{{ partner.username }}">
-        {% else %}
-            <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
-        {% endif %}
-        <div>
-            <strong>{{ partner.profile.name|default:partner.username }}</strong>
-            <div class="text-muted small">@{{ partner.username }}</div>
+    {% if is_group %}
+        <div class="user-list__user">
+            {% if conv.cover %}
+                <img src="{{ conv.cover.url }}" alt="" class="conv-avatar conv-avatar--group" loading="lazy">
+            {% else %}
+                <div class="conv-avatar conv-avatar--group">
+                    <i class="bi bi-people-fill" aria-hidden="true"></i>
+                </div>
+            {% endif %}
+            <div>
+                <strong>{{ conv.display_name }}</strong>
+                <div class="text-muted small">
+                    {{ group_members|length }} members ·
+                    {% for m in group_members|slice:":3" %}{{ m.profile.name|default:m.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% if group_members|length > 3 %}…{% endif %}
+                </div>
+            </div>
         </div>
-    </a>
+        <form method="post" action="{% url 'messaging:group_leave' conv.pk %}" class="ms-auto m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    onclick="return confirm('Leave this group?');">Leave</button>
+        </form>
+    {% else %}
+        <a href="{% url 'accounts:profile' partner.username %}" class="user-list__user">
+            {% if partner.profile.avatar %}
+                <img src="{{ partner.profile.avatar.url }}" alt="{{ partner.username }}" loading="lazy">
+            {% else %}
+                <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill" aria-hidden="true"></i></div>
+            {% endif %}
+            <div>
+                <strong>{{ partner.profile.name|default:partner.username }}</strong>
+                <div class="text-muted small">@{{ partner.username }}</div>
+            </div>
+        </a>
+    {% endif %}
+    <span class="thread-header__status js-thread-status text-muted small">connecting…</span>
 </div>
 
-<div class="thread">
-    {% for m in messages_list %}
-        <div class="thread__msg {% if m.sender == user %}thread__msg--mine{% endif %}">
+<div class="thread js-thread"
+     data-conv-id="{{ conv.pk }}"
+     data-current-user-id="{{ user.id }}"
+     data-group="{% if is_group %}1{% else %}0{% endif %}">
+    {% for row in messages_list %}
+        <div class="thread__msg
+                    {% if row.is_mine %}thread__msg--mine{% endif %}
+                    {% if row.is_continuation %}thread__msg--continuation{% endif %}"
+             data-msg-id="{{ row.message.id }}" data-sender-id="{{ row.message.sender_id }}">
             <div class="thread__bubble">
-                {{ m.body|linebreaksbr }}
-                <div class="thread__time">{{ m.created_at|timesince }} ago</div>
+                {% if is_group and not row.is_mine %}
+                    <div class="thread__sender">
+                        <a href="{% url 'accounts:profile' row.message.sender.username %}">
+                            {{ row.message.sender.profile.name|default:row.message.sender.username }}
+                        </a>
+                    </div>
+                {% endif %}
+                {{ row.message.body|linebreaksbr }}
+                <div class="thread__time" title="{{ row.message.created_at|date:'M j, Y · H:i' }}">{{ row.message.created_at|timesince }} ago</div>
             </div>
         </div>
     {% empty %}
         <div class="empty-tiny text-center mt-3">No messages yet — say hi 👋</div>
     {% endfor %}
+    <div class="thread__typing js-thread-typing" hidden>
+        <span class="thread__typing-dots"><span></span><span></span><span></span></span>
+        <span class="js-thread-typing-name"></span> is typing…
+    </div>
 </div>
 
-<form method="post" class="thread-form">
+<form method="post" class="thread-form js-thread-form">
     {% csrf_token %}
-    <input type="text" name="body" class="form-control" placeholder="Type a message…" required maxlength="2000" autofocus>
+    <label for="thread-message-input" class="visually-hidden">Type a message</label>
+    <input id="thread-message-input" type="text" name="body" class="form-control" placeholder="Type a message…"
+           required maxlength="2000" autofocus
+           autocomplete="off"
+           aria-label="Type a message">
     <button class="btn btn-dark" type="submit">Send</button>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const root = document.querySelector(".js-thread");
+    const form = document.querySelector(".js-thread-form");
+    const input = form && form.querySelector("input[name='body']");
+    const status = document.querySelector(".js-thread-status");
+    const typingEl = document.querySelector(".js-thread-typing");
+    const typingName = document.querySelector(".js-thread-typing-name");
+    if (!root || !form || !input) return;
+
+    const convId = root.dataset.convId;
+    const currentUserId = parseInt(root.dataset.currentUserId, 10);
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${proto}//${location.host}/ws/messages/${convId}/`;
+
+    let ws, typingTimer = null, lastTypingSent = 0, hideTypingTimer = null;
+    let reconnectAttempt = 0;
+
+    const isGroupConv = root.dataset.group === "1";
+
+    function appendMessage(data) {
+        const isMine = data.sender_id === currentUserId;
+        if (data.self_echo) return;   // we already rendered our own optimistically
+
+        // Detect consecutive same-sender (Slack/Discord-style grouping).
+        const lastMsg = root.querySelector(".thread__msg:last-of-type");
+        const lastSender = lastMsg && lastMsg.dataset.senderId;
+        const isContinuation = isGroupConv && !isMine
+            && lastSender && parseInt(lastSender, 10) === data.sender_id;
+
+        const wrap = document.createElement("div");
+        wrap.className = "thread__msg"
+            + (isMine ? " thread__msg--mine" : "")
+            + (isContinuation ? " thread__msg--continuation" : "");
+        if (data.id) wrap.dataset.msgId = data.id;
+        wrap.dataset.senderId = data.sender_id;
+        const senderTag = (isGroupConv && !isMine && !isContinuation && data.sender_username)
+            ? `<div class="thread__sender">${escapeHtml(data.sender_username)}</div>`
+            : "";
+        wrap.innerHTML = `
+            <div class="thread__bubble">
+                ${senderTag}
+                ${escapeHtml(data.body).replace(/\n/g, "<br>")}
+                <div class="thread__time">just now</div>
+            </div>`;
+        // Insert before the typing indicator so it stays at the bottom.
+        if (typingEl && typingEl.parentElement === root) {
+            root.insertBefore(wrap, typingEl);
+        } else {
+            root.appendChild(wrap);
+        }
+        scrollThreadToBottom(true);
+    }
+
+    function scrollThreadToBottom(smooth) {
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        try {
+            root.scrollTo({
+                top: root.scrollHeight,
+                behavior: (smooth && !reduced) ? "smooth" : "auto",
+            });
+        } catch (e) {
+            root.scrollTop = root.scrollHeight;
+        }
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement("div");
+        d.textContent = s == null ? "" : s;
+        return d.innerHTML;
+    }
+
+    function showTyping(name) {
+        if (!typingEl) return;
+        if (typingName) typingName.textContent = name;
+        typingEl.hidden = false;
+        if (hideTypingTimer) clearTimeout(hideTypingTimer);
+        hideTypingTimer = setTimeout(() => { typingEl.hidden = true; }, 2200);
+    }
+
+    function setStatus(text, cls) {
+        if (!status) return;
+        status.textContent = text;
+        status.classList.remove("text-success", "text-warning", "text-danger");
+        if (cls) status.classList.add(cls);
+    }
+
+    function connect() {
+        ws = new WebSocket(wsUrl);
+
+        ws.addEventListener("open", () => {
+            reconnectAttempt = 0;
+            setStatus("● Online", "text-success");
+            ws.send(JSON.stringify({ action: "read" }));
+        });
+
+        ws.addEventListener("message", (ev) => {
+            let data;
+            try { data = JSON.parse(ev.data); } catch (e) { return; }
+            if (data.type === "chat.message") {
+                appendMessage(data);
+            } else if (data.type === "chat.typing") {
+                showTyping(data.sender_username);
+            } else if (data.type === "chat.read") {
+                // Could mark messages with a "✓ read" indicator here.
+            }
+        });
+
+        ws.addEventListener("close", () => {
+            setStatus("Reconnecting…", "text-warning");
+            // Exponential backoff up to 30 s.
+            const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempt++));
+            setTimeout(connect, delay);
+        });
+
+        ws.addEventListener("error", () => ws.close());
+    }
+    connect();
+
+    form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const body = input.value.trim();
+        if (!body) return;
+        // Optimistic render.
+        appendMessage({ sender_id: currentUserId, body, id: null });
+        input.value = "";
+        try {
+            ws.send(JSON.stringify({ action: "send", body }));
+        } catch (e) {
+            // WS disconnected — fall back to a normal POST.
+            const fd = new FormData(form);
+            fd.set("body", body);
+            fetch(form.action || location.href, {
+                method: "POST",
+                body: fd,
+                credentials: "same-origin",
+                headers: { "X-CSRFToken": (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || "" },
+            });
+        }
+    });
+
+    // Throttled typing indicator — send at most once every 1.5 s.
+    input.addEventListener("input", () => {
+        const now = Date.now();
+        if (now - lastTypingSent < 1500) return;
+        lastTypingSent = now;
+        try { ws.send(JSON.stringify({ action: "typing" })); } catch (e) { /* ignore */ }
+    });
+
+    // Auto-scroll to bottom on first render (instant, before paint).
+    scrollThreadToBottom(false);
+  })();
+</script>
 {% endblock %}

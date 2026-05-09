@@ -28,7 +28,10 @@ def _replace_mentions_and_hashtags(escaped_text):
 
     def hashtag_repl(m):
         tag = m.group(1)
-        url = reverse("posts:search") + f"?q=%23{tag}"
+        try:
+            url = reverse("posts:tag", kwargs={"slug": tag.lower()})
+        except Exception:
+            url = reverse("posts:search") + f"?q=%23{tag}"
         return f'<a class="post-hashtag" href="{url}">#{tag}</a>'
 
     text = MENTION_RE.sub(mention_repl, escaped_text)
@@ -70,3 +73,44 @@ def comment_liked_by(comment, user):
     if not user or not user.is_authenticated:
         return False
     return comment.is_liked_by(user)
+
+
+@register.filter(name="reaction_of")
+def reaction_of(post, user):
+    """Template helper — `{{ post|reaction_of:user }}` returns the emoji code or ''."""
+    if not user or not user.is_authenticated or not post:
+        return ""
+    return post.reaction_of(user) or ""
+
+
+@register.filter(name="poll_voted_for")
+def poll_voted_for(poll, user):
+    """Returns list of option IDs the user voted for. Empty list if anonymous."""
+    if not poll or not user or not user.is_authenticated:
+        return []
+    return poll.votes_for(user)
+
+
+@register.filter(name="user_eq")
+def user_eq(a, b):
+    """`{{ user|user_eq:post.author }}` — True if the same User."""
+    if not a or not b:
+        return False
+    a_id = getattr(a, "pk", None) or getattr(a, "id", None)
+    b_id = getattr(b, "pk", None) or getattr(b, "id", None)
+    return a_id is not None and a_id == b_id
+
+
+@register.filter(name="can_pin")
+def can_pin(post, user):
+    """True if the user may pin/unpin this post.
+
+    Allowed: the author themselves, or an owner/admin of the post's community.
+    """
+    if not user or not user.is_authenticated or not post:
+        return False
+    if post.author_id == user.id:
+        return True
+    if post.community_id and post.community.is_admin(user):
+        return True
+    return False

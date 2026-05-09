@@ -1,10 +1,52 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
 from .models import Conversation, Message
 
 User = get_user_model()
+
+
+class WebSocketConsumerTests(TransactionTestCase):
+    """Smoke test: connect, send, receive across two participants."""
+
+    async def test_two_participants_can_chat_live(self):
+        from asgiref.sync import sync_to_async
+        from channels.testing import WebsocketCommunicator
+
+        from socialhub.asgi import application
+
+        alice = await sync_to_async(User.objects.create_user)(
+            username="alice_ws", password="ComplexPass!234",
+        )
+        bob = await sync_to_async(User.objects.create_user)(
+            username="bob_ws", password="ComplexPass!234",
+        )
+        conv = await sync_to_async(Conversation.between)(alice, bob)
+
+        # Alice connects.
+        a = WebsocketCommunicator(application, f"/ws/messages/{conv.id}/")
+        a.scope["user"] = alice
+        a.scope["url_route"] = {"kwargs": {"conv_id": conv.id}}
+        connected_a, _ = await a.connect()
+        assert connected_a
+
+        # Bob connects.
+        b = WebsocketCommunicator(application, f"/ws/messages/{conv.id}/")
+        b.scope["user"] = bob
+        b.scope["url_route"] = {"kwargs": {"conv_id": conv.id}}
+        connected_b, _ = await b.connect()
+        assert connected_b
+
+        # Alice sends; Bob should receive a chat.message event.
+        await a.send_json_to({"action": "send", "body": "hello bob"})
+        evt = await b.receive_json_from(timeout=2)
+        assert evt["type"] == "chat.message"
+        assert evt["body"] == "hello bob"
+        assert evt["sender_username"] == "alice_ws"
+
+        await a.disconnect()
+        await b.disconnect()
 
 
 class ConversationModelTests(TestCase):

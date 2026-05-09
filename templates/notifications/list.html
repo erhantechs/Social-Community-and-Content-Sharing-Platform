@@ -10,6 +10,14 @@
 <ul class="notif-list">
     {% for n in notifications %}
         <li class="notif-list__item {% if not n.is_read %}notif-list__item--unread{% endif %}">
+            <span class="notif-list__type notif-list__type--{{ n.verb }}" aria-hidden="true">
+                {% if n.verb == 'like' %}<i class="bi bi-heart-fill"></i>
+                {% elif n.verb == 'comment' %}<i class="bi bi-chat-fill"></i>
+                {% elif n.verb == 'follow' %}<i class="bi bi-person-plus-fill"></i>
+                {% elif n.verb == 'mention' %}<i class="bi bi-at"></i>
+                {% elif n.verb == 'message' %}<i class="bi bi-envelope-fill"></i>
+                {% else %}<i class="bi bi-bell-fill"></i>{% endif %}
+            </span>
             <a href="{% url 'accounts:profile' n.actor.username %}" class="notif-list__avatar">
                 {% if n.actor.profile.avatar %}
                     <img src="{{ n.actor.profile.avatar.url }}" alt="{{ n.actor.username }}">
@@ -29,7 +37,19 @@
             </div>
         </li>
     {% empty %}
-        <div class="empty-state"><i class="bi bi-bell"></i><h2>No notifications yet</h2></div>
+        <div class="empty-state">
+            <i class="bi bi-bell"></i>
+            <h2>No notifications yet</h2>
+            <p>Notifications appear when someone likes your posts, replies to you, follows you or sends you a message.</p>
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <a href="{% url 'accounts:search_users' %}" class="btn btn-dark">
+                    <i class="bi bi-people"></i> Find people
+                </a>
+                <a href="{% url 'posts:explore' %}" class="btn btn-outline-dark">
+                    <i class="bi bi-compass"></i> Explore
+                </a>
+            </div>
+        </div>
     {% endfor %}
 </ul>
 {% endblock %}

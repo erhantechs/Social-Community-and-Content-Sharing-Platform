@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Backup codes · SocialHub{% endblock %}
+
+{% block content %}
+<div class="card-block">
+    <div class="card-block__header"><h2>Save your backup codes</h2></div>
+
+    <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0" style="font-size: 20px;" aria-hidden="true"></i>
+        <div>
+            <strong>Critical: save these codes now.</strong>
+            Each code can be used <strong>once</strong> if you lose access to your
+            authenticator app. <strong>They will not be shown again.</strong> If you
+            lose them, you may be locked out of your account.
+        </div>
+    </div>
+
+    <ul class="tfa-codes">
+        {% for code in codes %}
+            <li><code>{{ code }}</code></li>
+        {% endfor %}
+    </ul>
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="button" class="btn btn-dark js-copy-codes"
+                data-codes="{% for c in codes %}{{ c }}{% if not forloop.last %}\n{% endif %}{% endfor %}">
+            <i class="bi bi-clipboard" aria-hidden="true"></i> Copy all
+        </button>
+        <a href="{% url 'accounts:two_factor_status' %}" class="btn btn-outline-secondary">
+            I've saved them
+        </a>
+    </div>
+</div>
+
+<script>
+    document.querySelector(".js-copy-codes")?.addEventListener("click", function () {
+        navigator.clipboard.writeText(this.dataset.codes.replace(/\\n/g, "\n"));
+        this.innerHTML = '<i class="bi bi-check"></i> Copied';
+    });
+</script>
+{% endblock %}

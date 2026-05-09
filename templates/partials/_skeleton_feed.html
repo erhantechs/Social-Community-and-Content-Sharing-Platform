@@ -1,0 +1,24 @@
+{# Skeleton placeholders for a feed list — three card silhouettes.
+   Render this where a real feed will go while data is loading
+   (e.g. via fetch into a `js-feed-target` container). #}
+<div class="skeleton-feed">
+    {% for _ in '123' %}
+    <div class="skeleton-card">
+        <div class="skeleton-card__row">
+            <div class="skeleton skeleton-circle"></div>
+            <div style="flex:1">
+                <div class="skeleton skeleton-line skeleton-line--short" style="margin-bottom:6px">.</div>
+                <div class="skeleton skeleton-line" style="width:25%; height:9px">.</div>
+            </div>
+        </div>
+        <div class="skeleton skeleton-line skeleton-line--long" style="margin-bottom:8px">.</div>
+        <div class="skeleton skeleton-line skeleton-line--med" style="margin-bottom:12px">.</div>
+        <div class="skeleton skeleton-image">.</div>
+        <div class="skeleton-card__row">
+            <div class="skeleton skeleton-line" style="width:60px">.</div>
+            <div class="skeleton skeleton-line" style="width:80px">.</div>
+            <div class="skeleton skeleton-line" style="width:70px; margin-left:auto">.</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

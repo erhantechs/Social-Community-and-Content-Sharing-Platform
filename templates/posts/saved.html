@@ -14,8 +14,11 @@
         <div class="empty-state">
             <i class="bi bi-bookmark"></i>
             <h2>No saved posts yet</h2>
-            <p>Tap the bookmark icon on any post to save it for later.</p>
-            <a href="{% url 'posts:feed' %}" class="btn btn-dark">Back to feed</a>
+            <p>Tap the <i class="bi bi-bookmark"></i> bookmark icon on any post to save it for later — your saves stay private.</p>
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <a href="{% url 'posts:feed' %}" class="btn btn-dark"><i class="bi bi-house-door"></i> Back to feed</a>
+                <a href="{% url 'posts:explore' %}" class="btn btn-outline-dark"><i class="bi bi-compass"></i> Explore posts</a>
+            </div>
         </div>
     {% endfor %}
 </div>

@@ -10,6 +10,14 @@
 
     <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
+        {% if draft %}
+            <input type="hidden" name="draft_id" value="{{ draft.pk }}">
+            <div class="alert alert-info py-2 small mb-3">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                Continuing from a saved draft — publishing will remove the draft.
+                <a href="{% url 'posts:draft_list' %}" class="ms-2">All drafts →</a>
+            </div>
+        {% endif %}
 
         {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
@@ -44,16 +52,77 @@
                 <label class="form-label">Visibility</label>
                 {{ form.visibility }}
             </div>
+            {% if form.community.field.queryset.exists %}
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.community.id_for_label }}">Community</label>
+                    {{ form.community }}
+                    <small class="text-muted">Optional — post into one of your communities.</small>
+                </div>
+            {% endif %}
             <div class="col-md-6">
                 <label class="form-label">Interests</label>
-                <div class="checkbox-grid">
-                    {{ form.interests }}
+                <div class="interest-chips">
+                    {% for choice in form.interests %}
+                        <label class="interest-chip">
+                            {{ choice.tag }}
+                            <span>{{ choice.choice_label }}</span>
+                        </label>
+                    {% endfor %}
                 </div>
             </div>
         </div>
 
-        <div class="mt-4 d-flex gap-2">
+        {% if poll_form %}
+        {% with has_poll=poll_form.question.value|default:""|length %}
+        <div class="poll-builder mt-3" data-poll-builder>
+            <button type="button" class="btn btn-sm js-poll-toggle poll-builder__toggle{% if has_poll or poll_form.errors %} active{% endif %}"
+                    aria-expanded="{% if has_poll or poll_form.errors %}true{% else %}false{% endif %}"
+                    aria-controls="poll-fields"
+                    title="Run a poll on this post">
+                <i class="bi bi-bar-chart-fill" aria-hidden="true"></i>
+                <span>Add a poll</span>
+                <span class="poll-builder__hint text-muted small">— let people vote</span>
+            </button>
+            <div id="poll-fields" class="poll-builder__fields mt-3" {% if not has_poll and not poll_form.errors %}hidden{% endif %}>
+                {% if poll_form.non_field_errors %}
+                    <div class="alert alert-danger">{{ poll_form.non_field_errors }}</div>
+                {% endif %}
+                <div class="mb-2">
+                    <label for="id_question" class="form-label small">Poll question</label>
+                    {{ poll_form.question }}
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6">{{ poll_form.option_1 }}</div>
+                    <div class="col-md-6">{{ poll_form.option_2 }}</div>
+                    <div class="col-md-6">{{ poll_form.option_3 }}</div>
+                    <div class="col-md-6">{{ poll_form.option_4 }}</div>
+                </div>
+                <div class="row g-2 mt-2 align-items-center">
+                    <div class="col-md-6">
+                        <label for="id_duration_hours" class="form-label small">Poll duration</label>
+                        {{ poll_form.duration_hours }}
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div class="form-check mt-md-4">
+                            {{ poll_form.multiple_choice }}
+                            <label for="id_multiple_choice" class="form-check-label">Allow multiple answers</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% endif %}
+
+        <div class="mt-4 d-flex gap-2 flex-wrap">
             <button type="submit" class="btn btn-dark">{{ title|default:"Save" }}</button>
+            <button type="submit"
+                    formaction="{% url 'posts:draft_save' %}"
+                    formnovalidate
+                    class="btn btn-outline-dark"
+                    title="Save without publishing">
+                <i class="bi bi-floppy" aria-hidden="true"></i> Save as draft
+            </button>
             <a href="{% url 'posts:feed' %}" class="btn btn-outline-secondary">Cancel</a>
         </div>
     </form>

@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% load post_extras %}
 
-{% block title %}Post by {{ post.author.username }} · SocialHub{% endblock %}
+{% block title %}Post by {{ post.author.profile.name|default:post.author.username }} · SocialHub{% endblock %}
+{% block meta_description %}{{ post.body|truncatechars:155 }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ post.author.profile.name|default:post.author.username }} on SocialHub{% endblock %}
+{% block og_description %}{{ post.body|truncatechars:200 }}{% endblock %}
+{% block og_image %}{% if post.image %}{{ request.scheme }}://{{ request.get_host }}{{ post.image.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
+{% block twitter_image %}{% if post.image %}{{ request.scheme }}://{{ request.get_host }}{{ post.image.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
 
 {% block content %}
 <a href="{% url 'posts:feed' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to feed</a>
@@ -23,7 +29,11 @@
                 {% else %}
                     <div class="composer__avatar avatar-placeholder"><i class="bi bi-person-fill"></i></div>
                 {% endif %}
-                <input type="text" name="body" class="form-control" placeholder="Write a comment…" maxlength="1000" required>
+                <input type="text" name="body" class="form-control js-char-counted"
+                       placeholder="Write a comment…" maxlength="1000" required
+                       autocomplete="off" data-mention="1"
+                       data-counter-target="comment-counter">
+                <span class="char-counter" id="comment-counter">1000</span>
                 <button type="submit" class="btn btn-dark">Post</button>
             </div>
         </form>

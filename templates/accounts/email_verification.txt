@@ -1,0 +1,9 @@
+Hi {{ user.first_name|default:user.username }},
+
+Welcome to SocialHub! Please confirm your email address by clicking the link below:
+
+{{ verify_url }}
+
+If you didn't sign up for SocialHub, you can safely ignore this message.
+
+— The SocialHub team

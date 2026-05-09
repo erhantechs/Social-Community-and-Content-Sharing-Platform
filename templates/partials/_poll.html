@@ -1,0 +1,68 @@
+{% load post_extras %}
+{# Poll widget for a post. Expects: poll. #}
+{% with my_votes=poll|poll_voted_for:user %}
+<div class="poll {% if my_votes or poll.is_closed %}poll--results{% endif %}"
+     data-poll-id="{{ poll.id }}"
+     data-multiple="{{ poll.multiple_choice|yesno:'true,false' }}"
+     data-vote-url="{% url 'posts:poll_vote' poll.pk %}">
+    {% if poll.question %}
+        <div class="poll__question">{{ poll.question }}</div>
+    {% endif %}
+
+    <div class="poll__options">
+        {% for option in poll.options.all %}
+            {% if my_votes or poll.is_closed %}
+                <div class="poll-option poll-option--result {% if option.id in my_votes %}poll-option--mine{% endif %}"
+                     data-option-id="{{ option.id }}">
+                    <div class="poll-option__bar"
+                         style="width: {% if poll.total_votes %}{% widthratio option.vote_count poll.total_votes 100 %}{% else %}0{% endif %}%;"></div>
+                    <div class="poll-option__row">
+                        <span class="poll-option__text">
+                            {% if option.id in my_votes %}<i class="bi bi-check-circle-fill" aria-hidden="true"></i>{% endif %}
+                            {{ option.text }}
+                        </span>
+                        <span class="poll-option__pct">
+                            {% if poll.total_votes %}{% widthratio option.vote_count poll.total_votes 100 %}%{% else %}0%{% endif %}
+                        </span>
+                    </div>
+                </div>
+            {% else %}
+                <button type="button"
+                        class="poll-option poll-option--vote js-poll-vote"
+                        data-option-id="{{ option.id }}"
+                        {% if poll.multiple_choice %}aria-pressed="false"{% endif %}
+                        {% if not user.is_authenticated %}disabled aria-disabled="true"{% endif %}>
+                    <span class="poll-option__text">{{ option.text }}</span>
+                </button>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if poll.multiple_choice and not my_votes and not poll.is_closed and user.is_authenticated %}
+        <div class="poll__submit">
+            <button type="button" class="btn btn-sm btn-dark js-poll-submit" disabled>
+                Submit vote
+            </button>
+            <span class="text-muted small ms-2 js-poll-selected-count" aria-live="polite">No options selected</span>
+        </div>
+    {% endif %}
+
+    <div class="poll__meta">
+        <span class="js-poll-total">{{ poll.total_votes }}</span>&nbsp;{{ poll.total_votes|pluralize:"vote,votes" }}
+        {% if poll.closes_at %}
+            <span aria-hidden="true">·</span>
+            {% if poll.is_closed %}
+                <span class="poll__closed">Closed</span>
+            {% else %}
+                <span title="{{ poll.closes_at|date:'M j, Y · H:i' }}">
+                    Ends in {{ poll.closes_at|timeuntil }}
+                </span>
+            {% endif %}
+        {% endif %}
+        {% if poll.multiple_choice %}
+            <span aria-hidden="true">·</span>
+            <span>Multiple choice</span>
+        {% endif %}
+    </div>
+</div>
+{% endwith %}

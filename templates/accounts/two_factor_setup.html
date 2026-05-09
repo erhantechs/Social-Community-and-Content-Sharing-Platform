@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Set up 2FA · SocialHub{% endblock %}
+
+{% block content %}
+<a href="{% url 'accounts:two_factor_status' %}" class="back-link">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back
+</a>
+
+<div class="card-block">
+    <div class="card-block__header"><h2>Set up two-factor authentication</h2></div>
+
+    <ol class="tfa-steps">
+        <li>
+            <strong>Install an authenticator app</strong> on your phone — Google
+            Authenticator, 1Password, Authy, or similar.
+        </li>
+        <li>
+            <strong>Scan this QR code</strong> with the app:
+            <div class="tfa-qr mt-2">
+                <img src="{{ qr_data_uri }}" alt="QR code for 2FA setup" width="220" height="220">
+            </div>
+            <details class="mt-2">
+                <summary>Can't scan? Enter the code manually.</summary>
+                <code class="tfa-secret">{{ manual_entry }}</code>
+            </details>
+        </li>
+        <li>
+            <strong>Enter the 6-digit code</strong> from the app to confirm:
+            <form method="post" class="tfa-form mt-2" novalidate>
+                {% csrf_token %}
+                <label for="tfa-token" class="visually-hidden">6-digit code</label>
+                <input id="tfa-token" name="token" type="text"
+                       inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                       autocomplete="one-time-code" required autofocus
+                       class="form-control tfa-input" placeholder="123456">
+                <button type="submit" class="btn btn-dark">Verify &amp; enable</button>
+            </form>
+        </li>
+    </ol>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Verify code · SocialHub{% endblock %}
+
+{% block layout %}
+<div class="auth-shell">
+    <div class="auth-card">
+        <a href="{% url 'posts:feed' %}" class="auth-card__brand">
+            {% load static %}
+            <img src="{% static 'images/logo-icon.svg' %}" alt="" class="auth-card__brand-icon" width="28" height="28">
+            <strong>SocialHub</strong>
+        </a>
+        <h1 class="auth-card__title">Two-factor verification</h1>
+        <p class="auth-card__subtitle">
+            Welcome back, <strong>{{ username }}</strong>. Enter the 6-digit
+            code from your authenticator app to finish signing in.
+        </p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="tfa-code" class="form-label">Authentication code</label>
+                <input id="tfa-code" name="code" type="text"
+                       inputmode="numeric" pattern="[0-9A-Z]{6,12}" maxlength="12"
+                       autocomplete="one-time-code" required autofocus
+                       class="form-control tfa-input" placeholder="123456">
+                <small class="text-muted">You can also use a backup code.</small>
+            </div>
+            <button type="submit" class="btn btn-dark w-100">Verify</button>
+        </form>
+
+        <div class="auth-card__footer">
+            <a href="{% url 'accounts:logout' %}">Cancel and sign out</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

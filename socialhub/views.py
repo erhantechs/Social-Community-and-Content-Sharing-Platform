@@ -1,7 +1,7 @@
 """Project-level error handlers and infrastructure endpoints."""
 from django.core.cache import cache
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
@@ -45,3 +45,19 @@ def healthz(request):
         {"status": "ok" if healthy else "unhealthy", **checks},
         status=200 if healthy else 503,
     )
+
+
+def robots_txt(request):
+    """Tell crawlers what's public, what's not, and where the sitemap is."""
+    sitemap_url = request.build_absolute_uri("/sitemap.xml")
+    body = (
+        "User-agent: *\n"
+        "Disallow: /admin/\n"
+        "Disallow: /accounts/\n"
+        "Disallow: /messages/\n"
+        "Disallow: /notifications/\n"
+        "Disallow: /api/\n"
+        "Allow: /\n"
+        f"\nSitemap: {sitemap_url}\n"
+    )
+    return HttpResponse(body, content_type="text/plain")

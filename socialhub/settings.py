@@ -39,6 +39,9 @@ ALLOWED_HOSTS = [
 
 
 INSTALLED_APPS = [
+    # `daphne` must come before staticfiles so it can replace `runserver`
+    # with its own ASGI-aware version.
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -46,7 +49,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "django.contrib.sites",
+    "django.contrib.sitemaps",
     # Third-party
+    "channels",
     "rest_framework",
     "rest_framework.authtoken",
     "drf_spectacular",
@@ -55,7 +61,36 @@ INSTALLED_APPS = [
     "posts.apps.PostsConfig",
     "notifications.apps.NotificationsConfig",
     "messaging.apps.MessagingConfig",
+    "communities.apps.CommunitiesConfig",
 ]
+
+
+# ---------- Channels (real-time WebSockets) ----------
+ASGI_APPLICATION = "socialhub.asgi.application"
+
+# In dev, use the in-memory channel layer — no Redis required.
+# In production, set REDIS_URL and we'll switch to channels-redis automatically.
+REDIS_URL = os.environ.get("REDIS_URL", "").strip()
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+    }
+
+
+# ---------- OAuth / Social login ----------
+# Set these in your environment to enable "Continue with Google/GitHub".
+# Without them the corresponding sign-in buttons are hidden.
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "")
+GITHUB_OAUTH_CLIENT_ID = os.environ.get("GITHUB_OAUTH_CLIENT_ID", "")
+GITHUB_OAUTH_CLIENT_SECRET = os.environ.get("GITHUB_OAUTH_CLIENT_SECRET", "")
 
 
 REST_FRAMEWORK = {
@@ -119,6 +154,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "notifications.context_processors.unread_notifications",
+                "posts.context_processors.sidebar",
             ],
         },
     },
@@ -187,6 +223,9 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Required by `django.contrib.sites` (used by sitemap framework).
+SITE_ID = 1
 
 
 # Authentication

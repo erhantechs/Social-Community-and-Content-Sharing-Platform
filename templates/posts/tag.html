@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}#{{ tag.name }} · SocialHub{% endblock %}
+
+{% block content %}
+<div class="tag-header">
+    <div class="tag-header__icon" aria-hidden="true">#</div>
+    <div class="tag-header__meta">
+        <h1 class="tag-header__name">#{{ tag.name }}</h1>
+        <p class="tag-header__count">
+            {{ page_obj.paginator.count }} {{ page_obj.paginator.count|pluralize:"post,posts" }}
+            {% if follower_count %}
+                · {{ follower_count }} follower{{ follower_count|pluralize }}
+            {% endif %}
+        </p>
+    </div>
+    {% if user.is_authenticated %}
+        <form method="post" action="{% url 'posts:tag_follow' tag.slug %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn {% if is_followed %}btn-outline-dark{% else %}btn-dark{% endif %}"
+                    title="{% if is_followed %}Stop seeing #{{ tag.name }} in your feed{% else %}Add #{{ tag.name }} posts to your feed{% endif %}">
+                {% if is_followed %}
+                    <i class="bi bi-check2" aria-hidden="true"></i> Following
+                {% else %}
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Follow tag
+                {% endif %}
+            </button>
+        </form>
+    {% endif %}
+    <a href="{% url 'posts:explore' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i> Explore
+    </a>
+</div>
+
+<div class="feed-list">
+    {% for post in posts %}
+        {% include "partials/_post_card.html" with post=post %}
+    {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-hash" aria-hidden="true"></i>
+            <h2>No posts for #{{ tag.name }} yet</h2>
+            <p>Be the first to use this tag.</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'posts:create' %}" class="btn btn-dark">Create a post</a>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+{% include "partials/_pagination.html" %}
+{% endblock %}

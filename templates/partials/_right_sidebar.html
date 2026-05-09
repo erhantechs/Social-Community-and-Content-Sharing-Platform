@@ -1,3 +1,4 @@
+{% load avatar_tags %}
 {# Right sidebar: Stories, Suggestions, Recommendations #}
 
 {# ----- Stories ----- #}
@@ -19,10 +20,10 @@
                     data-avatar="{% if story.author.profile.avatar %}{{ story.author.profile.avatar.url }}{% endif %}"
                     data-caption="{{ story.caption|default:'' }}"
                     data-time="{{ story.created_at|timesince }} ago">
-                <img src="{{ story.image.url }}" alt="{{ story.caption|default:story.author.username }}">
+                <img src="{{ story.image.url }}" alt="{{ story.caption|default:story.author.username }}" loading="lazy" decoding="async">
                 <div class="story-card__author">
                     {% if story.author.profile.avatar %}
-                        <img src="{{ story.author.profile.avatar.url }}" alt="{{ story.author.username }}">
+                        <img src="{{ story.author.profile.avatar.url }}" alt="{{ story.author.username }}" loading="lazy" decoding="async">
                     {% endif %}
                     <span>{{ story.author.profile.name|truncatechars:10 }}</span>
                 </div>
@@ -42,11 +43,7 @@
         {% for u in suggestions %}
             <li class="suggest-item" data-username="{{ u.username }}">
                 <div class="suggest-item__user">
-                    {% if u.profile.avatar %}
-                        <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}">
-                    {% else %}
-                        <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
-                    {% endif %}
+                    {% avatar u size="sm" %}
                     <a href="{% url 'accounts:profile' u.username %}">
                         <strong>{{ u.profile.name|default:u.username|truncatechars:14 }}</strong>
                     </a>
@@ -63,6 +60,31 @@
     </ul>
     {% if suggestions %}
         <a class="see-all" href="{% url 'accounts:search_users' %}">See all</a>
+    {% endif %}
+</section>
+
+{# ----- Trending hashtags ----- #}
+<section class="card-block">
+    <div class="card-block__header">
+        <h3>Trending</h3>
+    </div>
+    {% if trending_hashtags %}
+        <ul class="trending-list">
+            {% for tag in trending_hashtags %}
+                <li class="trending-list__item">
+                    <a href="{% url 'posts:tag' tag.slug %}" class="trending-list__link">
+                        <span class="trending-list__hash">#</span>
+                        <span class="trending-list__name">{{ tag.name|truncatechars:18 }}</span>
+                        <span class="trending-list__count">{{ tag.c }} {{ tag.c|pluralize:"post,posts" }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty-tiny">
+            <i class="bi bi-hash" aria-hidden="true"></i>
+            No trending tags yet — add a #tag to your next post.
+        </div>
     {% endif %}
 </section>
 

@@ -251,6 +251,86 @@ class CommentReplyAndLikeTests(TestCase):
             CommentLike.objects.create(user=self.bob, comment=self.parent_comment)
 
 
+class CommentEditTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="ComplexPass!234")
+        self.bob = User.objects.create_user(username="bob", password="ComplexPass!234")
+        self.post = Post.objects.create(author=self.alice, body="P", visibility=Post.PUBLIC)
+        self.comment = Comment.objects.create(author=self.bob, post=self.post, body="original")
+
+    def test_author_can_edit(self):
+        self.client.login(username="bob", password="ComplexPass!234")
+        resp = self.client.post(reverse("posts:comment_edit", args=[self.comment.pk]), {
+            "body": "edited body",
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.body, "edited body")
+        self.assertTrue(self.comment.edited)
+
+    def test_non_author_cannot_edit(self):
+        self.client.login(username="alice", password="ComplexPass!234")
+        resp = self.client.post(reverse("posts:comment_edit", args=[self.comment.pk]), {
+            "body": "hacked",
+        })
+        self.assertEqual(resp.status_code, 403)
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.body, "original")
+
+    def test_empty_edit_rejected(self):
+        self.client.login(username="bob", password="ComplexPass!234")
+        resp = self.client.post(reverse("posts:comment_edit", args=[self.comment.pk]), {
+            "body": "   ",
+        })
+        # Either 302 to detail with error, or 400 ajax
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.body, "original")
+        self.assertFalse(self.comment.edited)
+
+
+class RepostTests(TestCase):
+    def setUp(self):
+        self.alice = User.objects.create_user(username="alice", password="ComplexPass!234")
+        self.bob = User.objects.create_user(username="bob", password="ComplexPass!234")
+        self.original = Post.objects.create(
+            author=self.alice, body="Original post", visibility=Post.PUBLIC,
+        )
+
+    def test_repost_creates_new_post_with_quote(self):
+        self.client.login(username="bob", password="ComplexPass!234")
+        resp = self.client.post(reverse("posts:repost", args=[self.original.pk]), {
+            "body": "", "visibility": "public",
+        })
+        self.assertEqual(resp.status_code, 302)
+        repost = Post.objects.exclude(pk=self.original.pk).get()
+        self.assertEqual(repost.author, self.bob)
+        self.assertEqual(repost.quoted_post, self.original)
+        self.assertTrue(repost.is_repost)
+        self.assertFalse(repost.is_quote)
+
+    def test_quote_repost_with_body(self):
+        self.client.login(username="bob", password="ComplexPass!234")
+        self.client.post(reverse("posts:repost", args=[self.original.pk]), {
+            "body": "My take", "visibility": "public",
+        })
+        repost = Post.objects.get(body="My take")
+        self.assertTrue(repost.is_quote)
+        self.assertFalse(repost.is_repost)
+
+    def test_reposting_a_repost_collapses_to_original(self):
+        repost = Post.objects.create(
+            author=self.bob, body="", visibility=Post.PUBLIC, quoted_post=self.original,
+        )
+        carol = User.objects.create_user(username="carol", password="ComplexPass!234")
+        self.client.login(username="carol", password="ComplexPass!234")
+        self.client.post(reverse("posts:repost", args=[repost.pk]), {
+            "body": "", "visibility": "public",
+        })
+        carol_repost = Post.objects.get(author=carol)
+        # carol's repost points at the original, not at bob's repost
+        self.assertEqual(carol_repost.quoted_post, self.original)
+
+
 class FeedTests(TestCase):
     def setUp(self):
         self.alice = User.objects.create_user(username="alice", password="ComplexPass!234")

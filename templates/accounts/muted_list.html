@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Muted accounts · SocialHub{% endblock %}
+
+{% block content %}
+<div class="feed-header">
+    <h1 class="feed-title">Muted accounts</h1>
+</div>
+<p class="text-muted small">Muting hides someone's posts from your feed and explore — they aren't notified.</p>
+
+<div class="user-list">
+    {% for m in mutes %}
+        {% with target=m.muted %}
+        <div class="user-list__row">
+            <div class="user-list__user">
+                {% if target.profile.avatar %}
+                    <img src="{{ target.profile.avatar.url }}" alt="{{ target.username }}" loading="lazy">
+                {% else %}
+                    <div class="avatar-placeholder avatar-placeholder--md"><i class="bi bi-person-fill"></i></div>
+                {% endif %}
+                <div>
+                    <strong>{{ target.profile.name|default:target.username }}</strong>
+                    <div class="text-muted small">@{{ target.username }} · muted {{ m.created_at|timesince }} ago</div>
+                </div>
+            </div>
+            <form method="post" action="{% url 'accounts:toggle_mute' target.username %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary btn-sm" type="submit">Unmute</button>
+            </form>
+        </div>
+        {% endwith %}
+    {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-volume-mute"></i>
+            <h2>You haven't muted anyone</h2>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
