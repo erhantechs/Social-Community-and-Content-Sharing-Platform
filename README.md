@@ -28,11 +28,13 @@ pip install -r requirements.txt
 copy .env.example .env            # Windows  (use `cp` on macOS/Linux)
 python manage.py migrate
 python manage.py createsuperuser
-python manage.py seed
+python manage.py seed_demo
 python manage.py runserver
 ```
 
-Then open **http://127.0.0.1:8000/** in a browser and log in as `emma_wilson` / `DemoPass!234`.
+Then open **http://127.0.0.1:8000/** in a browser and log in as `demo_001` / `demo12345`.
+
+> `seed_demo` populates 40 users, 250 posts, 60 stories, **12 communities**, DMs, and group chats (~1–2 minutes — downloads avatars/photos). For a smaller dataset (10 named users like `emma_wilson` / `DemoPass!234`, no communities) use `python manage.py seed` instead.
 
 For a fully explained walkthrough (with troubleshooting tips and the meaning of each step) see [Run this project on your own machine — step by step](#-run-this-project-on-your-own-machine--step-by-step) at the end of the README.
 

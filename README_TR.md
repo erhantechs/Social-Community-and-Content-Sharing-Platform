@@ -28,11 +28,13 @@ pip install -r requirements.txt
 copy .env.example .env            # Windows  (macOS/Linux için `cp`)
 python manage.py migrate
 python manage.py createsuperuser
-python manage.py seed
+python manage.py seed_demo
 python manage.py runserver
 ```
 
-Sonra tarayıcıda **http://127.0.0.1:8000/** adresini aç ve `emma_wilson` / `DemoPass!234` ile giriş yap.
+Sonra tarayıcıda **http://127.0.0.1:8000/** adresini aç ve `demo_001` / `demo12345` ile giriş yap.
+
+> `seed_demo` 40 kullanıcı, 250 gönderi, 60 hikâye, **12 topluluk**, DM ve grup sohbeti oluşturur (~1–2 dakika — avatar/fotoğraf indirir). Daha küçük veri seti (10 isimli kullanıcı `emma_wilson` / `DemoPass!234`, community yok) için `python manage.py seed` kullan.
 
 Her adımın anlamı ve sık karşılaşılan sorunların çözümü için README'nin sonundaki [Projeyi kendi bilgisayarında çalıştır — adım adım](#-projeyi-kendi-bilgisayarında-çalıştır--adım-adım) bölümüne bak.
 
