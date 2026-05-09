@@ -14,6 +14,30 @@ Arayüz, modern bir sosyal medya panosundan ilham alınarak tasarlandı: solda p
 
 ---
 
+## ⚡ Hızlı başlangıç — 8 adım
+
+Repoyu klonladıktan (veya ZIP'i çıkardıktan) sonra proje klasöründe bir terminal aç ve şu komutları sırayla çalıştır:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate.bat        # Windows CMD
+# .venv\Scripts\Activate.ps1      # Windows PowerShell
+# source .venv/bin/activate       # macOS / Linux
+
+pip install -r requirements.txt
+copy .env.example .env            # Windows  (macOS/Linux için `cp`)
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py seed
+python manage.py runserver
+```
+
+Sonra tarayıcıda **http://127.0.0.1:8000/** adresini aç ve `emma_wilson` / `DemoPass!234` ile giriş yap.
+
+Her adımın anlamı ve sık karşılaşılan sorunların çözümü için README'nin sonundaki [Projeyi kendi bilgisayarında çalıştır — adım adım](#-projeyi-kendi-bilgisayarında-çalıştır--adım-adım) bölümüne bak.
+
+---
+
 ## İçindekiler
 
 1. [Özellikler](#özellikler)

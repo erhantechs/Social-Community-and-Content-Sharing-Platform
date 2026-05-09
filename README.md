@@ -14,6 +14,30 @@ The UI is inspired by a contemporary social-media dashboard design: a left sideb
 
 ---
 
+## ⚡ Quick start — 8 steps
+
+After cloning the repo (or extracting the ZIP) and opening a terminal in the project folder, run these in order:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate.bat        # Windows CMD
+# .venv\Scripts\Activate.ps1      # Windows PowerShell
+# source .venv/bin/activate       # macOS / Linux
+
+pip install -r requirements.txt
+copy .env.example .env            # Windows  (use `cp` on macOS/Linux)
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py seed
+python manage.py runserver
+```
+
+Then open **http://127.0.0.1:8000/** in a browser and log in as `emma_wilson` / `DemoPass!234`.
+
+For a fully explained walkthrough (with troubleshooting tips and the meaning of each step) see [Run this project on your own machine — step by step](#-run-this-project-on-your-own-machine--step-by-step) at the end of the README.
+
+---
+
 ## Table of contents
 
 1. [Features](#features)
